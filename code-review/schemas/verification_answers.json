@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VerificationAnswers",
+  "description": "M7 Verifier 判定输出（⑥）：Claude 读 verification_pack.json 后对每条 finding 给出对抗式三态 verdict。confirm 可选覆盖 cwe/severity。",
+  "type": "object",
+  "required": ["meta", "answers"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["source_verification_pack", "generated_at", "answered"],
+      "properties": {
+        "source_verification_pack": { "type": "string" },
+        "generated_at": { "type": "string", "format": "date-time" },
+        "answered": { "type": "integer" }
+      }
+    },
+    "answers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["finding_id", "verdict", "reason"],
+        "properties": {
+          "finding_id": { "type": "string" },
+          "verdict": { "enum": ["confirm", "reject", "escalate"], "description": "confirm=维持漏洞 / reject=假阳性撤销 / escalate=需追加深度复核" },
+          "reason": { "type": "string" },
+          "cwe": { "type": "string", "description": "confirm 时可选覆盖" },
+          "severity": { "enum": ["high", "medium", "low"], "description": "confirm 时可选覆盖" }
+        }
+      }
+    }
+  }
+}

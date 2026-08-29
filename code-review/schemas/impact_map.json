@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Impact Map",
+  "description": "Change Analyzer 输出：文件级静态标注（草稿，随里程碑细化）。纯静态、0 LLM token。",
+  "type": "object",
+  "required": ["meta", "tech_stack", "files"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "properties": {
+        "base": { "type": ["string", "null"] },
+        "head": { "type": ["string", "null"] },
+        "mode": { "enum": ["worktree", "cached", "range"] },
+        "generated_at": { "type": "string", "format": "date-time" },
+        "source_change": { "type": "string", "description": "输入 change.json 文件名" }
+      }
+    },
+    "tech_stack": {
+      "type": "object",
+      "description": "仓库级聚合，供后续阶段偏向 Prompt / 选规则",
+      "properties": {
+        "languages": { "type": "array", "items": { "type": "string" } },
+        "frameworks": { "type": "array", "items": { "type": "string" } },
+        "files_total": { "type": "integer" },
+        "lines_added": { "type": "integer" },
+        "lines_deleted": { "type": "integer" }
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "lang", "status", "file_type", "risk_class", "relevant_rules"],
+        "properties": {
+          "file": { "type": "string" },
+          "lang": { "type": "string" },
+          "status": { "enum": ["added", "modified", "deleted", "renamed"] },
+          "file_type": { "enum": ["code", "config", "manifest", "dockerfile", "lockfile", "doc", "binary", "unknown"] },
+          "framework": { "type": ["string", "null"] },
+          "risk_class": { "type": "array", "items": { "enum": ["A01", "A02", "A03", "A04", "A05"] }, "description": "文件暴露的 OWASP 类别（类型基底 + 主题词）" },
+          "topics": { "type": "array", "items": { "type": "string" }, "description": "命中的主题词（sql/web/crypto...）" },
+          "changed_functions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "kind": { "enum": ["function", "class"] },
+                "line_start": { "type": "integer" },
+                "line_end": { "type": "integer" }
+              }
+            },
+            "description": "被 hunk 触及的 def/class（Python 用 ast，其它行级正则）"
+          },
+          "relevant_rules": { "type": "array", "items": { "type": "string" }, "description": "资格粗筛后的规则名（registry.json），检测在 M4" }
+        }
+      }
+    }
+  }
+}

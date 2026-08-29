@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ReviewAnswers",
+  "description": "Security Reviewer 判定结果（⑤ 中间产物）：Claude 读 review_pack.json 后逐条产出。finalize 会校验：每条 review_id 恰好答一次、verdict 合法、confirm 带 severity/cwe。",
+  "type": "object",
+  "required": ["meta", "answers"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["source_review_pack", "generated_at", "answered"],
+      "properties": {
+        "source_review_pack": { "type": "string" },
+        "generated_at": { "type": "string", "format": "date-time" },
+        "answered": { "type": "integer", "description": "已判定条数（须等于 review_pack.meta.review_count）" }
+      }
+    },
+    "answers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["review_id", "verdict"],
+        "properties": {
+          "review_id": { "type": "string" },
+          "verdict": { "enum": ["confirm", "reject"] },
+          "cwe": { "type": "string", "description": "confirm 必填" },
+          "severity": { "enum": ["high", "medium", "low"], "description": "confirm 必填" },
+          "reason": { "type": "string" },
+          "fix_hint": { "type": "string" }
+        }
+      }
+    }
+  }
+}

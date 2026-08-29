@@ -19,7 +19,7 @@
 | R3 | 技术栈 | Git + Shell + Python(编排) + JSON(Agent 通信) + grep/ripgrep + 轻量 AST + LLM；Semgrep 可选增强层 |
 | R4 | 开发顺序 | 测试先行：先 Test Corpus 后 Rule（ADR-0001） |
 | 1 | 指标排序 | Recall > FPR > Token Cost；FPR 软上限 10%，Token 硬预算 |
-| 2 | 首轮覆盖 | A01~A05 五类，每类 3~5 模式，共 19 条（见 §5） |
+| 2 | 首轮覆盖 | A01~A05 五类，每类 3~4 模式，共 18 条（见 §5） |
 | 3 | 角色 | 3 认知角色：Change Analyzer / Security Reviewer / Verifier（ADR-0002） |
 | 4 | Test Corpus | 每类 3~5 positive + 2~3 negative；语言锁 Python（A03 用 manifest 样例） |
 | 5 | Context Budget | `{max_diff_lines:3000, max_context_files:10, max_review_tokens:12000, max_verification_tokens:5000}` |
@@ -64,7 +64,7 @@
 - **finding.json**（Reviewer/Verifier 输出）：`{finding_id, candidate_id, category, cwe, severity, verdict, confidence, location, evidence[], fix_hint}`。
 - **annotation.json**（Ground Truth，Test Corpus）：`{sample_id, category, cwe, vulnerable, pattern, lines[], note}`。
 
-## 5. 规则基线（M4 首批 19 条）
+## 5. 规则基线（M4 首批 18 条）
 
 | 类别 | 关键 CWE | 规则 |
 | --- | --- | --- |
@@ -88,7 +88,7 @@
 | M8 | A01~A10 扩展 | 冲 60 分 |
 | M9 | Extra + Token 优化 | 冲榜 |
 
-**当前位置**：M3 Change Analyzer 施工中（M1 骨架+靶场、M2 Git Collector 已完成验收；M2 交付见 [SKILL.md](../code-review/SKILL.md)）。
+**当前位置**：M8 A01~A10 扩展施工前（M1~M7 已完成验收：骨架+靶场 / Git Collector / Change Analyzer / Signal Engine / Risk Router / Security Reviewer / Verifier + Dedup，回归 488/488；交付见 [SKILL.md](../code-review/SKILL.md)）。
 
 ## 7. 第一版明确不做
 

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VerificationPack",
+  "description": "M7 Verifier 对抗复核输入（⑥ build）：把 M6 的 findings 包成有界对抗复核窗口（规则口径 + 脱敏证据），按 max_verification_tokens=5000 预算分批。LLM 只看到这里的 rule_ask/evidence/context，永远看不到完整 diff（ADR-0003）。",
+  "type": "object",
+  "required": ["meta", "system", "batches"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["source_finding", "generated_at", "verification_count", "budget_tokens", "estimated_prompt_tokens", "batch_count", "within_budget", "oversized", "missing_rules"],
+      "properties": {
+        "source_finding": { "type": "string" },
+        "generated_at": { "type": "string", "format": "date-time" },
+        "verification_count": { "type": "integer" },
+        "budget_tokens": { "type": "integer", "description": "R5 max_verification_tokens=5000" },
+        "estimated_prompt_tokens": { "type": "integer" },
+        "batch_count": { "type": "integer" },
+        "within_budget": { "type": "boolean" },
+        "oversized": { "type": "array", "items": { "type": "string" }, "description": "单条自身超限的 finding_id（R7 不静默截断）" },
+        "missing_rules": { "type": "array", "items": { "type": "string" }, "description": "registry 缺失的 pattern（rule_ask 不可用）" }
+      }
+    },
+    "system": { "type": "string", "description": "对抗复核系统口径（LLM 提示）" },
+    "batches": {
+      "type": "array",
+      "description": "按预算分批的复核项；每批估算提示 token ≤ budget*SAFETY",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["finding_id", "category", "pattern", "cwe", "severity", "confidence", "origin_verdict", "file", "line", "rule_ask", "evidence", "context"],
+          "properties": {
+            "finding_id": { "type": "string" },
+            "category": { "type": "string", "enum": ["A01", "A02", "A03", "A04", "A05"] },
+            "pattern": { "type": "string" },
+            "cwe": { "type": "string" },
+            "severity": { "enum": ["high", "medium", "low"] },
+            "confidence": { "enum": ["high", "medium", "low"] },
+            "origin_verdict": { "enum": ["CONFIRMED_BY_RULE", "CONFIRMED_BY_REVIEWER"] },
+            "file": { "type": "string" },
+            "line": { "type": "integer" },
+            "rule_ask": { "type": "string", "description": "该规则要审什么（registry review.ask）" },
+            "fix_hint": { "type": "string" },
+            "evidence": { "type": "array", "items": { "type": "object" }, "description": "脱敏证据" },
+            "context": { "type": "string", "description": "脱敏有界证据窗口" }
+          }
+        }
+      }
+    }
+  }
+}

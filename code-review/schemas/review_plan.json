@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ReviewPlan",
+  "description": "Risk Router 输出（④ → ⑤）：每条候选的路由决策 + 静态结案 finding + 进 Reviewer 的候选清单。纯规则，0 LLM token。",
+  "type": "object",
+  "required": ["meta", "decisions", "findings_static", "review_ids"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["source_candidate", "generated_at", "counts"],
+      "properties": {
+        "source_candidate": { "type": "string" },
+        "generated_at": { "type": "string", "format": "date-time" },
+        "counts": {
+          "type": "object",
+          "required": ["total", "finding", "review", "skip", "clean"],
+          "properties": {
+            "total": { "type": "integer" },
+            "finding": { "type": "integer" },
+            "review": { "type": "integer" },
+            "skip": { "type": "integer" },
+            "clean": { "type": "integer" }
+          }
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["candidate_id", "pattern", "category", "file", "line", "confidence", "decision", "reason"],
+        "properties": {
+          "candidate_id": { "type": "string" },
+          "pattern": { "type": "string" },
+          "category": { "type": "string" },
+          "file": { "type": "string" },
+          "line": { "type": "integer" },
+          "confidence": { "enum": ["high", "medium", "low"] },
+          "decision": { "enum": ["finding", "review", "skip", "clean"] },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "findings_static": {
+      "type": "array",
+      "description": "静态结案为漏洞的 finding（0 token，不再进 Reviewer）。",
+      "items": {
+        "type": "object",
+        "required": ["finding_id", "candidate_id", "category", "pattern", "cwe", "file", "line", "severity", "verdict", "evidence", "context"],
+        "properties": {
+          "finding_id": { "type": "string" },
+          "candidate_id": { "type": "string" },
+          "category": { "type": "string" },
+          "pattern": { "type": "string" },
+          "cwe": { "type": "string" },
+          "file": { "type": "string" },
+          "line": { "type": "integer" },
+          "severity": { "enum": ["high", "medium", "low"] },
+          "verdict": { "enum": ["CONFIRMED_BY_RULE"] },
+          "evidence": { "type": "array" },
+          "context": { "type": "string" }
+        }
+      }
+    },
+    "review_ids": { "type": "array", "items": { "type": "string" }, "description": "进 ⑤ Security Reviewer 的候选 ID 清单" }
+  }
+}

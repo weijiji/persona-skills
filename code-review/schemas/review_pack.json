@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ReviewPack",
+  "description": "Security Reviewer 输入（⑤ 内部产物）：review_ids → 有界证据包（规则口径 + evidence + context，已脱敏）。Claude 逐批判定后产出 review_answers.json。",
+  "type": "object",
+  "required": ["meta", "system", "batches"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["source_review_plan", "source_candidate", "generated_at", "review_count", "budget_tokens", "estimated_prompt_tokens", "batch_count", "within_budget"],
+      "properties": {
+        "source_review_plan": { "type": "string" },
+        "source_candidate": { "type": "string" },
+        "generated_at": { "type": "string", "format": "date-time" },
+        "review_count": { "type": "integer" },
+        "budget_tokens": { "type": "integer", "description": "Context Budget max_review_tokens（R5，默认 12000）" },
+        "estimated_prompt_tokens": { "type": "integer", "description": "整包提示估算 token（len/4 粗估）" },
+        "batch_count": { "type": "integer" },
+        "within_budget": { "type": "boolean" },
+        "oversized": { "type": "array", "items": { "type": "string" }, "description": "单条自身估算超预算的 review_id（R7 不静默截断，显式记录）" },
+        "missing_candidates": { "type": "array", "items": { "type": "string" }, "description": "review_ids 里找不到候选的断裂 id（契约破损，显式记录）" }
+      }
+    },
+    "system": { "type": "string", "description": "审查员系统口径（判定标准）" },
+    "batches": {
+      "type": "array",
+      "description": "按预算分批的候选包；每批估算 token ≤ budget×0.85，逐批判定",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["review_id", "candidate_id", "category", "pattern", "cwe", "rule_ask", "fix_hint", "file", "line", "confidence", "evidence", "context"],
+          "properties": {
+            "review_id": { "type": "string" },
+            "candidate_id": { "type": "string" },
+            "category": { "type": "string" },
+            "pattern": { "type": "string" },
+            "cwe": { "type": "string" },
+            "rule_ask": { "type": "string", "description": "该规则的审查问题（registry.review.ask）" },
+            "fix_hint": { "type": "string", "description": "修复建议（registry.review.fix）" },
+            "file": { "type": "string" },
+            "line": { "type": "integer" },
+            "confidence": { "enum": ["high", "medium", "low"] },
+            "evidence": { "type": "array", "description": "脱敏证据" },
+            "context": { "type": "string", "description": "脱敏有界证据窗口" }
+          }
+        }
+      }
+    }
+  }
+}

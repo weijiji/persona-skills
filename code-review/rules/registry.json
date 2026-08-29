@@ -1,0 +1,45 @@
+{
+  "$comment": "规则资格表（M3 起生效）。langs = change.json 的 lang 字段值（python/javascript/manifest/dockerfile/json...）。relevant_rules 只做资格粗筛，不做检测——检测逻辑在 M4 Signal Engine。review.ask/fix 是 M6 Security Reviewer 用的规则口径（进 LLM 提示，只对 review 路由的候选生效）。",
+  "rules": [
+    { "name": "idor_missing_scope_check", "category": "A01", "cwe": "CWE-639", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby"],
+      "review": { "ask": "该端点是否在无归属/越权校验的情况下，按用户可控的 id 直接返回或修改资源，使登录用户可访问他人的数据？", "fix": "先校验资源 owner 是否属于当前会话用户，再返回/修改资源。" } },
+    { "name": "handler_without_auth",      "category": "A01", "cwe": "CWE-862", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby"],
+      "review": { "ask": "该敏感路径端点是否完全没有身份认证守卫（无鉴权装饰器、函数内也无登录/角色校验）？", "fix": "为敏感端点增加登录与角色校验。" } },
+    { "name": "ssrf_user_url",             "category": "A01", "cwe": "CWE-918", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby"],
+      "review": { "ask": "服务端发起请求的 URL 是否可能由攻击者控制（来自 request 参数/用户输入/拼接），从而打到内网或任意主机？", "fix": "校验协议与目标域名白名单，禁止内网/保留地址。" } },
+    { "name": "csrf_state_change",         "category": "A01", "cwe": "CWE-352", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby"],
+      "review": { "ask": "POST/PUT/DELETE 状态变更请求是否缺少 CSRF 令牌，且项目无全局 CSRF 防护？", "fix": "启用项目级 CSRFProtect 或为表单加入 token 校验。" } },
+
+    { "name": "debug_enabled",       "category": "A02", "cwe": "CWE-489", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby", "c", "cpp", "rust", "kotlin", "csharp", "json", "yaml", "toml"],
+      "review": { "ask": "调试模式（debug=True / DEBUG=1）是否出现在可能进入生产的配置里？", "fix": "生产环境关闭调试模式，调试开关走环境变量隔离。" } },
+    { "name": "default_credentials", "category": "A02", "cwe": "CWE-798", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby", "c", "cpp", "rust", "kotlin", "csharp", "json", "yaml", "toml"],
+      "review": { "ask": "是否硬编码了弱/默认凭据（admin/password/123456 等），且无运行时注入？", "fix": "改用强随机凭据，通过环境变量/密钥管理注入。" } },
+    { "name": "permissive_cors",     "category": "A02", "cwe": "CWE-942", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby", "c", "cpp", "rust", "kotlin", "csharp", "json", "yaml", "toml"],
+      "review": { "ask": "CORS 是否对任意来源（*）开放，使任何网站可跨域读取该接口数据？", "fix": "将 allow_origins 限制为受信域名列表。" } },
+    { "name": "xxe_parser",          "category": "A02", "cwe": "CWE-611", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby", "csharp"],
+      "review": { "ask": "XML 解析是否显式开启了外部实体/DTD 加载（resolve_entities=True 等）？", "fix": "禁用外部实体与 DTD 加载，仅解析本地内容。" } },
+
+    { "name": "unpinned_dependency", "category": "A03", "cwe": "CWE-1104", "langs": ["manifest", "dockerfile"],
+      "review": { "ask": "依赖是否未精确锁定版本（裸包名/范围/漂移 tag/未 pin 镜像 digest）？", "fix": "固定精确版本（== / 精确 tag / sha256 digest）。" } },
+    { "name": "missing_lockfile",    "category": "A03", "cwe": "CWE-1104", "langs": ["manifest"],
+      "review": { "ask": "依赖清单发生变更但仓库没有对应锁文件，构建是否不可复现？", "fix": "提交锁文件，保证构建可复现。" } },
+    { "name": "untrusted_registry",  "category": "A03", "cwe": "CWE-1329", "langs": ["manifest", "dockerfile"],
+      "review": { "ask": "依赖源/镜像源是否指向非官方或不可信仓库？", "fix": "使用官方源，并校验包/镜像 checksum 或 digest。" } },
+
+    { "name": "hardcoded_secret", "category": "A04", "cwe": "CWE-798", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby", "c", "cpp", "rust", "kotlin", "csharp", "json", "yaml", "toml"],
+      "review": { "ask": "是否把密钥/令牌等敏感凭据硬编码进代码库？", "fix": "移到环境变量/密钥管理，并轮换已泄露凭据。" } },
+    { "name": "weak_crypto",      "category": "A04", "cwe": "CWE-327", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby", "c", "cpp", "rust", "kotlin", "csharp"],
+      "review": { "ask": "是否使用弱加密算法（md5/sha1/rc4/des/blowfish）处理安全敏感数据（口令/签名）？", "fix": "改用 sha256/sha3/argon2/bcrypt 等强算法。" } },
+    { "name": "weak_rng",         "category": "A04", "cwe": "CWE-338", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby", "c", "cpp", "rust", "kotlin", "csharp"],
+      "review": { "ask": "是否用非加密随机数（random.*）生成安全敏感值（token/OTP/口令/重置码）？", "fix": "改用加密安全随机源（Python secrets）。" } },
+
+    { "name": "sql_concat",       "category": "A05", "cwe": "CWE-89", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby"],
+      "review": { "ask": "SQL 语句是否由未参数化的字符串拼接/插值构成，且拼接的数据可能来自用户输入？", "fix": "改用参数化查询（? / %s 占位符）或 ORM。" } },
+    { "name": "command_concat",   "category": "A05", "cwe": "CWE-78", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby", "c", "cpp", "rust", "kotlin", "csharp"],
+      "review": { "ask": "是否把用户可控数据拼入系统命令并 shell=True 执行，或 os.system 直接执行非字面量命令？", "fix": "避免 shell=True，用参数数组传命令；白名单校验命令。" } },
+    { "name": "eval_injection",   "category": "A05", "cwe": "CWE-94", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby"],
+      "review": { "ask": "eval/exec/compile 是否执行了非字面量、可能用户可控的代码？", "fix": "避免动态执行；用安全解析器替代 eval。" } },
+    { "name": "xss_innerHTML",    "category": "A05", "cwe": "CWE-79", "langs": ["python", "javascript", "typescript"],
+      "review": { "ask": "是否把非字面量、可能包含用户输入的数据直接写入 innerHTML 等 HTML 注入点？", "fix": "用 textContent，或对输出做上下文转义。" } }
+  ]
+}

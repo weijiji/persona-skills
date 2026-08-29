@@ -1,26 +1,46 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Candidate",
-  "description": "Signal Engine 输出、进 Risk Router / Security Reviewer 的最小审查单元（契约草稿）",
+  "description": "Signal Engine 输出（③ → ④/⑤）：候选 + 有界证据窗口。LLM 侧只看到这里的 evidence/context（已脱敏，密钥原文不落盘）。",
   "type": "object",
-  "required": ["candidate_id", "category", "pattern", "file", "line", "evidence", "context"],
+  "required": ["meta", "candidates"],
   "properties": {
-    "candidate_id": { "type": "string" },
-    "category": { "type": "string", "enum": ["A01", "A02", "A03", "A04", "A05"] },
-    "pattern": { "type": "string", "description": "命中的规则名，如 sql_concat" },
-    "file": { "type": "string" },
-    "line": { "type": "integer" },
-    "evidence": {
+    "meta": {
+      "type": "object",
+      "required": ["source_change", "source_impact", "generated_at", "candidates_total"],
+      "properties": {
+        "source_change": { "type": "string" },
+        "source_impact": { "type": "string" },
+        "generated_at": { "type": "string", "format": "date-time" },
+        "candidates_total": { "type": "integer" }
+      }
+    },
+    "candidates": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["kind", "value"],
+        "required": ["candidate_id", "category", "pattern", "file", "line", "confidence", "evidence", "context"],
         "properties": {
-          "kind": { "enum": ["endpoint", "user_controlled", "sink", "config", "auth", "sanitizer"] },
-          "value": { "type": "string", "description": "脱敏后的证据片段" }
+          "candidate_id": { "type": "string" },
+          "category": { "type": "string", "enum": ["A01", "A02", "A03", "A04", "A05"] },
+          "pattern": { "type": "string", "description": "命中的规则名，如 sql_concat" },
+          "file": { "type": "string" },
+          "line": { "type": "integer", "description": "锚定行：必须是本次 diff 新增的行" },
+          "confidence": { "enum": ["high", "medium", "low"], "description": "静态信号置信度，供 ④ Risk Router 使用" },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["kind", "value"],
+              "properties": {
+                "kind": { "enum": ["endpoint", "user_controlled", "sink", "config", "auth", "sanitizer"] },
+                "value": { "type": "string", "description": "脱敏后的证据片段" }
+              }
+            }
+          },
+          "context": { "type": "string", "description": "有界局部代码片段（函数体或行 ±5），已脱敏" }
         }
       }
-    },
-    "context": { "type": "string", "description": "有界局部代码片段，已脱敏" }
+    }
   }
 }

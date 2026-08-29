@@ -1,26 +1,104 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Finding",
-  "description": "Security Reviewer / Verifier 输出的漏洞结论（契约草稿）",
+  "description": "finding.json 终态（M6 Security Reviewer 产出 → M7 Verifier 三态复核 → Dedup 去重）。M6 阶段 verdict 用 CONFIRMED_BY_RULE / CONFIRMED_BY_REVIEWER；M7 复核后 findings 的 verdict 为三态 CONFIRMED / ESCALATE（origin_verdict 保留 M6 来源），Verifier 判 REJECT 的进入 rejected 附录。",
   "type": "object",
-  "required": ["finding_id", "candidate_id", "category", "cwe", "severity", "verdict", "confidence", "location"],
+  "required": ["meta", "findings", "rejected"],
   "properties": {
-    "finding_id": { "type": "string" },
-    "candidate_id": { "type": "string" },
-    "category": { "type": "string", "enum": ["A01", "A02", "A03", "A04", "A05"] },
-    "cwe": { "type": "string", "description": "如 CWE-89" },
-    "severity": { "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"] },
-    "verdict": { "enum": ["CONFIRMED", "REJECT", "ESCALATE"], "description": "Verifier 三态判定" },
-    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
-    "location": {
+    "meta": {
       "type": "object",
-      "required": ["file", "line"],
+      "required": ["source_finding", "source_verification_pack", "generated_at", "counts", "review_budget", "verification_budget"],
       "properties": {
-        "file": { "type": "string" },
-        "line": { "type": "integer" }
+        "source_finding": { "type": "string", "description": "M6 reviewer 输出的 finding.json" },
+        "source_verification_pack": { "type": "string", "description": "M7 复核证据包 verification_pack.json" },
+        "generated_at": { "type": "string", "format": "date-time" },
+        "counts": {
+          "type": "object",
+          "required": ["total", "confirmed", "escalated", "rejected", "rejected_by_verifier", "dedup_merged", "static", "reviewer_confirm"],
+          "properties": {
+            "total": { "type": "integer", "description": "去重后保留的 findings 数" },
+            "confirmed": { "type": "integer" },
+            "escalated": { "type": "integer" },
+            "rejected": { "type": "integer", "description": "rejected 附录条目总数（M6 reviewer 拒 + M7 verifier 拒）" },
+            "rejected_by_verifier": { "type": "integer" },
+            "dedup_merged": { "type": "integer", "description": "Dedup 合并掉的重复 finding 数" },
+            "static": { "type": "integer", "description": "来源：M5 静态结案数（provenance）" },
+            "reviewer_confirm": { "type": "integer", "description": "来源：M6 reviewer 确认数（provenance）" }
+          }
+        },
+        "review_budget": {
+          "type": "object",
+          "required": ["max_tokens", "estimated_prompt_tokens", "batch_count", "within_budget"],
+          "properties": {
+            "max_tokens": { "type": "integer" },
+            "estimated_prompt_tokens": { "type": "integer" },
+            "batch_count": { "type": "integer" },
+            "within_budget": { "type": "boolean" }
+          }
+        },
+        "verification_budget": {
+          "type": "object",
+          "required": ["max_tokens", "estimated_prompt_tokens", "batch_count", "within_budget"],
+          "properties": {
+            "max_tokens": { "type": "integer", "description": "R5 max_verification_tokens=5000" },
+            "estimated_prompt_tokens": { "type": "integer" },
+            "batch_count": { "type": "integer" },
+            "within_budget": { "type": "boolean" }
+          }
+        }
       }
     },
-    "evidence": { "type": "array", "items": { "type": "string" } },
-    "fix_hint": { "type": "string" }
+    "findings": {
+      "type": "array",
+      "description": "复核 + 去重后保留的漏洞结论",
+      "items": {
+        "type": "object",
+        "required": ["finding_id", "candidate_id", "category", "pattern", "cwe", "file", "line", "line_span", "severity", "verdict", "origin_verdict", "confidence", "evidence", "context"],
+        "properties": {
+          "finding_id": { "type": "string" },
+          "candidate_id": { "type": "string" },
+          "category": { "type": "string", "enum": ["A01", "A02", "A03", "A04", "A05"] },
+          "pattern": { "type": "string" },
+          "cwe": { "type": "string" },
+          "file": { "type": "string" },
+          "line": { "type": "integer", "description": "锚定行（diff 新增行；去重后取合并 span 起点）" },
+          "line_span": { "type": "array", "items": { "type": "integer" }, "minItems": 2, "maxItems": 2, "description": "[start, end] 漏洞跨度，供 Dedup key=(file, line_span, cwe)" },
+          "severity": { "enum": ["high", "medium", "low"] },
+          "verdict": {
+            "enum": ["CONFIRMED_BY_RULE", "CONFIRMED_BY_REVIEWER", "CONFIRMED", "REJECT", "ESCALATE"],
+            "description": "终态：CONFIRMED（复核确认）/ ESCALATE（需深度复核，保留并标记）；CONFIRMED_BY_RULE/REJECT 为中间态值（保留枚举向后兼容）"
+          },
+          "origin_verdict": { "enum": ["CONFIRMED_BY_RULE", "CONFIRMED_BY_REVIEWER"], "description": "M6 阶段来源" },
+          "confidence": { "enum": ["high", "medium", "low"] },
+          "evidence": { "type": "array", "items": { "type": "object" }, "description": "脱敏证据" },
+          "context": { "type": "string", "description": "脱敏有界证据窗口" },
+          "reason": { "type": "string", "description": "Reviewer 判定原因" },
+          "verifier_reason": { "type": "string", "description": "Verifier 对抗复核原因" },
+          "fix_hint": { "type": "string" }
+        }
+      }
+    },
+    "rejected": {
+      "type": "array",
+      "description": "被拒候选附录（R13）：M6 reviewer 拒（stage=reviewer）+ M7 verifier 三态判 REJECT（stage=verifier）。供 FPR 调优与审计",
+      "items": {
+        "type": "object",
+        "required": ["pattern", "category", "file", "line", "reason"],
+        "properties": {
+          "review_id": { "type": "string", "description": "M6 reviewer 拒条目专用" },
+          "finding_id": { "type": "string", "description": "M7 verifier 拒条目专用" },
+          "candidate_id": { "type": "string" },
+          "pattern": { "type": "string" },
+          "category": { "type": "string" },
+          "cwe": { "type": "string" },
+          "file": { "type": "string" },
+          "line": { "type": "integer" },
+          "verdict": { "enum": ["REJECT"], "description": "verifier 拒条目专用" },
+          "stage": { "enum": ["reviewer", "verifier"], "description": "被拒阶段" },
+          "reason": { "type": "string" },
+          "evidence": { "type": "array" }
+        }
+      }
+    }
   }
 }
