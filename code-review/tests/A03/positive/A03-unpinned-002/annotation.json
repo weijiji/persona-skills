@@ -1,0 +1,9 @@
+{
+  "sample_id": "A03-unpinned-002",
+  "category": "A03",
+  "cwe": "CWE-1104",
+  "vulnerable": true,
+  "pattern": "unpinned_dependency",
+  "lines": [5],
+  "note": "Caret range permits unpinned resolution of the express dependency."
+}

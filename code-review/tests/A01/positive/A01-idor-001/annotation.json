@@ -1,0 +1,9 @@
+{
+  "sample_id": "A01-idor-001",
+  "category": "A01",
+  "cwe": "CWE-639",
+  "vulnerable": true,
+  "pattern": "idor_missing_scope_check",
+  "lines": [13],
+  "note": "Returns any user's profile by id with no authentication or ownership check."
+}

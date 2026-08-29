@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Review Report",
+  "description": "最终报告：机器可读 JSON + 被拒候选附录（契约草稿，M9 细化）",
+  "type": "object",
+  "required": ["meta", "metrics", "findings"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "properties": {
+        "base": { "type": "string" },
+        "head": { "type": "string" },
+        "generated_at": { "type": "string", "format": "date-time" },
+        "token_used": { "type": "integer" },
+        "llm_calls": { "type": "integer" }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "description": "仅测试模式（带 Ground Truth 时）填充",
+      "properties": {
+        "recall": { "type": "number" },
+        "false_positive_rate": { "type": "number" }
+      }
+    },
+    "findings": { "type": "array", "items": { "$ref": "finding.json" } },
+    "rejected": { "type": "array", "description": "REJECT 候选附录，供 FPR 调优" }
+  }
+}

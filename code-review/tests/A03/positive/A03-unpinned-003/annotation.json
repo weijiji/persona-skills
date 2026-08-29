@@ -1,0 +1,9 @@
+{
+  "sample_id": "A03-unpinned-003",
+  "category": "A03",
+  "cwe": "CWE-1104",
+  "vulnerable": true,
+  "pattern": "unpinned_dependency",
+  "lines": [1],
+  "note": "Floating base image tag is not pinned to a digest."
+}

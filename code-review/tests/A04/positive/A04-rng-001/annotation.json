@@ -1,0 +1,9 @@
+{
+  "sample_id": "A04-rng-001",
+  "category": "A04",
+  "cwe": "CWE-338",
+  "vulnerable": true,
+  "pattern": "weak_rng",
+  "lines": [5],
+  "note": "Reset tokens use the predictable random module instead of a CSPRNG."
+}

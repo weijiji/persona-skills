@@ -1,0 +1,9 @@
+{
+  "sample_id": "A05-sql-002",
+  "category": "A05",
+  "cwe": "CWE-89",
+  "vulnerable": false,
+  "pattern": "sql_concat",
+  "lines": [7],
+  "note": "Query uses bound parameters so user input cannot alter the SQL."
+}

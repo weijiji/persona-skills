@@ -1,0 +1,9 @@
+{
+  "sample_id": "A01-ssrf-001",
+  "category": "A01",
+  "cwe": "CWE-918",
+  "vulnerable": true,
+  "pattern": "ssrf_user_url",
+  "lines": [11],
+  "note": "Fetches a user-supplied URL server-side, allowing SSRF."
+}

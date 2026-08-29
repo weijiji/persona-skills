@@ -1,0 +1,9 @@
+{
+  "sample_id": "A01-idor-002",
+  "category": "A01",
+  "cwe": "CWE-639",
+  "vulnerable": true,
+  "pattern": "idor_missing_scope_check",
+  "lines": [11],
+  "note": "Fetches an order by user-controlled id without verifying the caller owns it."
+}

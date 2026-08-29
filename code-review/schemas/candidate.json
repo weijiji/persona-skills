@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Candidate",
+  "description": "Signal Engine 输出、进 Risk Router / Security Reviewer 的最小审查单元（契约草稿）",
+  "type": "object",
+  "required": ["candidate_id", "category", "pattern", "file", "line", "evidence", "context"],
+  "properties": {
+    "candidate_id": { "type": "string" },
+    "category": { "type": "string", "enum": ["A01", "A02", "A03", "A04", "A05"] },
+    "pattern": { "type": "string", "description": "命中的规则名，如 sql_concat" },
+    "file": { "type": "string" },
+    "line": { "type": "integer" },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "value"],
+        "properties": {
+          "kind": { "enum": ["endpoint", "user_controlled", "sink", "config", "auth", "sanitizer"] },
+          "value": { "type": "string", "description": "脱敏后的证据片段" }
+        }
+      }
+    },
+    "context": { "type": "string", "description": "有界局部代码片段，已脱敏" }
+  }
+}

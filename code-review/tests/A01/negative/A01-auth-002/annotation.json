@@ -1,0 +1,9 @@
+{
+  "sample_id": "A01-auth-002",
+  "category": "A01",
+  "cwe": "CWE-639",
+  "vulnerable": false,
+  "pattern": "idor_missing_scope_check",
+  "lines": [16],
+  "note": "Handler is protected by a login decorator and an admin role check."
+}

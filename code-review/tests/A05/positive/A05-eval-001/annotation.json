@@ -1,0 +1,9 @@
+{
+  "sample_id": "A05-eval-001",
+  "category": "A05",
+  "cwe": "CWE-94",
+  "vulnerable": true,
+  "pattern": "eval_injection",
+  "lines": [9],
+  "note": "User-supplied request input is passed to eval, enabling code injection."
+}

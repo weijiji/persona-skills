@@ -1,0 +1,9 @@
+{
+  "sample_id": "A04-secret-002",
+  "category": "A04",
+  "cwe": "CWE-798",
+  "vulnerable": false,
+  "pattern": "hardcoded_secret",
+  "lines": [4],
+  "note": "API key is read from the environment rather than hardcoded."
+}

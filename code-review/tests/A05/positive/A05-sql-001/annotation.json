@@ -1,0 +1,9 @@
+{
+  "sample_id": "A05-sql-001",
+  "category": "A05",
+  "cwe": "CWE-89",
+  "vulnerable": true,
+  "pattern": "sql_concat",
+  "lines": [7],
+  "note": "User input is concatenated into a SQL query, enabling SQL injection."
+}

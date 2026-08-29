@@ -1,0 +1,9 @@
+{
+  "sample_id": "A01-auth-001",
+  "category": "A01",
+  "cwe": "CWE-639",
+  "vulnerable": false,
+  "pattern": "idor_missing_scope_check",
+  "lines": [15],
+  "note": "Ownership is verified against the session before the resource is returned."
+}

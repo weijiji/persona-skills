@@ -1,0 +1,9 @@
+{
+  "sample_id": "A05-cmd-002",
+  "category": "A05",
+  "cwe": "CWE-78",
+  "vulnerable": false,
+  "pattern": "command_concat",
+  "lines": [5],
+  "note": "Command arguments are passed as a list without shell interpretation."
+}

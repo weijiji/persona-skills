@@ -1,0 +1,9 @@
+{
+  "sample_id": "A03-pinned-001",
+  "category": "A03",
+  "cwe": "CWE-1104",
+  "vulnerable": false,
+  "pattern": "unpinned_dependency",
+  "lines": [1],
+  "note": "Dependency is pinned to an exact version."
+}

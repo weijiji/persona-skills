@@ -1,0 +1,9 @@
+{
+  "sample_id": "A04-weak-001",
+  "category": "A04",
+  "cwe": "CWE-327",
+  "vulnerable": true,
+  "pattern": "weak_crypto",
+  "lines": [5],
+  "note": "Passwords are hashed with the broken MD5 algorithm."
+}

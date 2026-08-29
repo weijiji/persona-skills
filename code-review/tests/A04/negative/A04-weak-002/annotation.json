@@ -1,0 +1,9 @@
+{
+  "sample_id": "A04-weak-002",
+  "category": "A04",
+  "cwe": "CWE-327",
+  "vulnerable": false,
+  "pattern": "weak_crypto",
+  "lines": [6],
+  "note": "Passwords use PBKDF2 and tokens come from the secrets module."
+}

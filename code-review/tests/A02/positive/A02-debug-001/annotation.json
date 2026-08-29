@@ -1,0 +1,9 @@
+{
+  "sample_id": "A02-debug-001",
+  "category": "A02",
+  "cwe": "CWE-489",
+  "vulnerable": true,
+  "pattern": "debug_enabled",
+  "lines": [12],
+  "note": "Runs Flask with debug mode enabled, exposing the interactive debugger."
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Change Set",
+  "description": "Git Collector 输出：一次 git 变更的机器可读快照（草稿，随里程碑细化；M2 增补 mode/untracked/binary/old_path）",
+  "type": "object",
+  "required": ["meta", "changes"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["base", "head", "generated_at", "mode", "total_files", "total_added", "total_deleted"],
+      "properties": {
+        "base": { "type": ["string", "null"], "description": "基线 ref 解析后的 commit hash（默认=HEAD；无提交时可为 null）" },
+        "head": { "type": "string", "description": "HEAD 侧：WORKTREE / INDEX / commit hash" },
+        "generated_at": { "type": "string", "format": "date-time" },
+        "mode": { "enum": ["worktree", "cached", "range"] },
+        "total_files": { "type": "integer" },
+        "total_added": { "type": "integer", "description": "纯新增行数（+ 行）" },
+        "total_deleted": { "type": "integer", "description": "纯删除行数（- 行）" },
+        "binary_files": { "type": "integer" },
+        "untracked_files": { "type": "integer", "description": "默认模式收录的未跟踪文本文件数" }
+      }
+    },
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "lang", "status", "size_lines", "hunks"],
+        "properties": {
+          "file": { "type": "string", "description": "变更后的路径" },
+          "old_path": { "type": ["string", "null"], "description": "renamed 时的原路径；非 rename 为 null" },
+          "lang": { "type": "string", "description": "由扩展名/文件名推断的语言/格式，如 python / manifest / unknown" },
+          "status": { "enum": ["added", "modified", "deleted", "renamed"] },
+          "binary": { "type": "boolean", "description": "二进制文件：不携带 hunks 内容" },
+          "untracked": { "type": "boolean", "description": "默认模式下收录的未跟踪新文件（按 added 处理）" },
+          "size_lines": { "type": "integer", "description": "受变更影响的行数 = 各 hunk 两侧行数较大者之和（用于下游四档分级）" },
+          "hunks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["new_start", "new_lines", "old_start", "old_lines", "code"],
+              "properties": {
+                "new_start": { "type": "integer" },
+                "new_lines": { "type": "integer" },
+                "old_start": { "type": "integer" },
+                "old_lines": { "type": "integer" },
+                "code": { "type": "string", "description": "hunk 原文（含 +/-/空格 前缀）；untracked 合成每条 + 前缀" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

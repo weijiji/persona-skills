@@ -1,0 +1,9 @@
+{
+  "sample_id": "A04-secret-001",
+  "category": "A04",
+  "cwe": "CWE-798",
+  "vulnerable": true,
+  "pattern": "hardcoded_secret",
+  "lines": [3],
+  "note": "Secret API key is hardcoded and embedded in an auth header."
+}

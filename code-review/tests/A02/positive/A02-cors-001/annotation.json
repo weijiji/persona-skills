@@ -1,0 +1,9 @@
+{
+  "sample_id": "A02-cors-001",
+  "category": "A02",
+  "cwe": "CWE-942",
+  "vulnerable": true,
+  "pattern": "permissive_cors",
+  "lines": [5],
+  "note": "CORS allows any origin, enabling cross-origin reads of the API."
+}

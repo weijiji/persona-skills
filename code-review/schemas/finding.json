@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Finding",
+  "description": "Security Reviewer / Verifier 输出的漏洞结论（契约草稿）",
+  "type": "object",
+  "required": ["finding_id", "candidate_id", "category", "cwe", "severity", "verdict", "confidence", "location"],
+  "properties": {
+    "finding_id": { "type": "string" },
+    "candidate_id": { "type": "string" },
+    "category": { "type": "string", "enum": ["A01", "A02", "A03", "A04", "A05"] },
+    "cwe": { "type": "string", "description": "如 CWE-89" },
+    "severity": { "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"] },
+    "verdict": { "enum": ["CONFIRMED", "REJECT", "ESCALATE"], "description": "Verifier 三态判定" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "location": {
+      "type": "object",
+      "required": ["file", "line"],
+      "properties": {
+        "file": { "type": "string" },
+        "line": { "type": "integer" }
+      }
+    },
+    "evidence": { "type": "array", "items": { "type": "string" } },
+    "fix_hint": { "type": "string" }
+  }
+}

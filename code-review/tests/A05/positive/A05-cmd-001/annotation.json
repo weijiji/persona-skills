@@ -1,0 +1,9 @@
+{
+  "sample_id": "A05-cmd-001",
+  "category": "A05",
+  "cwe": "CWE-78",
+  "vulnerable": true,
+  "pattern": "command_concat",
+  "lines": [5],
+  "note": "User input is concatenated into a shell command, enabling command injection."
+}

@@ -1,0 +1,9 @@
+{
+  "sample_id": "A02-config-002",
+  "category": "A02",
+  "cwe": "CWE-16",
+  "vulnerable": false,
+  "pattern": "permissive_cors",
+  "lines": [7],
+  "note": "CORS is restricted to an explicit origin allowlist and security headers are set."
+}

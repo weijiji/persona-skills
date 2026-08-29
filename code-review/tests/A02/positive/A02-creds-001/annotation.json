@@ -1,0 +1,9 @@
+{
+  "sample_id": "A02-creds-001",
+  "category": "A02",
+  "cwe": "CWE-798",
+  "vulnerable": true,
+  "pattern": "default_credentials",
+  "lines": [1],
+  "note": "Ships default admin credentials that are never rotated."
+}

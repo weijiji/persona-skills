@@ -1,0 +1,9 @@
+{
+  "sample_id": "A02-config-001",
+  "category": "A02",
+  "cwe": "CWE-16",
+  "vulnerable": false,
+  "pattern": "debug_enabled",
+  "lines": [15],
+  "note": "Runs with debug explicitly disabled and environment-based configuration."
+}
