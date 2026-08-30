@@ -26,7 +26,8 @@ from datetime import datetime, timezone
 
 # 规则名 → 该规则字面量命中即确凿 → 静态结案
 ROUTE_FINDING = {"hardcoded_secret", "permissive_cors", "debug_enabled",
-                 "default_credentials", "unpinned_dependency"}
+                 "default_credentials", "unpinned_dependency",
+                 "floating_dependency", "tls_verify_disabled"}
 # 规则名 → 基于缺位的弱信号 → 低置信跳过
 ROUTE_SKIP = {"handler_without_auth", "csrf_state_change", "missing_lockfile",
               "untrusted_registry"}
@@ -35,6 +36,7 @@ STATIC_SEVERITY = {
     "hardcoded_secret": "high", "default_credentials": "high",
     "unpinned_dependency": "medium", "permissive_cors": "medium",
     "debug_enabled": "medium",
+    "floating_dependency": "medium", "tls_verify_disabled": "medium",
 }
 
 REASONS = {

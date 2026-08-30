@@ -1,0 +1,9 @@
+{
+  "sample_id": "A08-tls-002",
+  "category": "A08",
+  "cwe": "CWE-295",
+  "vulnerable": false,
+  "pattern": "tls_verify_disabled",
+  "lines": [7],
+  "note": "Certificate verification is controlled by configuration, not hardcoded off."
+}

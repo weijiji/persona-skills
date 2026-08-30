@@ -1,0 +1,9 @@
+{
+  "sample_id": "A09-stacktrace-001",
+  "category": "A09",
+  "cwe": "CWE-209",
+  "vulnerable": true,
+  "pattern": "stacktrace_exposure",
+  "lines": [12],
+  "note": "The full exception traceback is returned to the client in the HTTP response."
+}

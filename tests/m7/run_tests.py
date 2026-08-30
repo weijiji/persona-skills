@@ -136,9 +136,19 @@ def _verdicts(doc):
 # T1 / T2：全量靶场贯通
 # ---------------------------------------------------------------------------
 
+# A03/A06 重叠注记（design-locked §6）：unpinned_dependency(A03, CWE-1104) 与
+# floating_dependency(A06, CWE-1104) 描述同一缺陷；浮动版本行两规则都会触发，
+# dedup 按 (file, cwe) 合并为一条，保留排序靠前的 A03 命名。因此 A06 floating
+# 正例在 m7 阶段按「同族 + 行号」验收——精确 pattern 已在 m4/m6 阶段验证。
+FAMILY = {
+    "floating_dependency": {"floating_dependency", "unpinned_dependency"},
+    "unpinned_dependency": {"unpinned_dependency", "floating_dependency"},
+}
+
+
 def t1_positives(tmp):
     print("T1 全量 positive 靶场：复核+去重后仍产出匹配 finding（verdict∈{CONFIRMED,ESCALATE}）")
-    for cat in ["A01", "A02", "A03", "A04", "A05"]:
+    for cat in ["A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10"]:
         base = CORPUS / cat / "positive"
         if not base.is_dir():
             continue
@@ -153,8 +163,9 @@ def t1_positives(tmp):
                 check(f"{ann['sample_id']} 管线可跑", False, e.stderr[-300:])
                 continue
             fs = finding["findings"]
-            matches = [x for x in fs if x["pattern"] == ann["pattern"]]
-            check(f"{ann['sample_id']} 产出 {ann['pattern']} finding",
+            fam = FAMILY.get(ann["pattern"], {ann["pattern"]})
+            matches = [x for x in fs if x["pattern"] in fam]
+            check(f"{ann['sample_id']} 产出 {ann['pattern']} 同族 finding",
                   bool(matches), f"got {[x['pattern'] for x in fs]}")
             if matches:
                 check(f"{ann['sample_id']} verdict 为 CONFIRMED/ESCALATE",
@@ -163,13 +174,15 @@ def t1_positives(tmp):
                 check(f"{ann['sample_id']} 行号±1（标注 {ann['lines']}）",
                       any(abs(x["line"] - ann["lines"][0]) <= 1 for x in matches),
                       f"got {[x['line'] for x in matches]}")
-                check(f"{ann['sample_id']} 类别=={ann['category']}",
-                      all(x["category"] == ann["category"] for x in matches))
+                check(f"{ann['sample_id']} 类别在标注族内",
+                      all(x["category"] in {ann["category"]} or
+                          (ann["pattern"] in FAMILY and x["category"] in {"A03", "A06"})
+                          for x in matches))
 
 
 def t2_negatives(tmp):
     print("T2 全量 negative 靶场：无匹配 finding")
-    for cat in ["A01", "A02", "A03", "A04", "A05"]:
+    for cat in ["A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10"]:
         base = CORPUS / cat / "negative"
         if not base.is_dir():
             continue

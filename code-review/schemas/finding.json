@@ -57,7 +57,7 @@
         "properties": {
           "finding_id": { "type": "string" },
           "candidate_id": { "type": "string" },
-          "category": { "type": "string", "enum": ["A01", "A02", "A03", "A04", "A05"] },
+          "category": { "type": "string", "enum": ["A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10"] },
           "pattern": { "type": "string" },
           "cwe": { "type": "string" },
           "file": { "type": "string" },

@@ -1,0 +1,9 @@
+{
+  "sample_id": "A09-log-003",
+  "category": "A09",
+  "cwe": "CWE-117",
+  "vulnerable": false,
+  "pattern": "log_injection",
+  "lines": [5],
+  "note": "User data is passed as a format argument (placeholder), not concatenated."
+}

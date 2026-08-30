@@ -37,7 +37,7 @@
           "status": { "enum": ["added", "modified", "deleted", "renamed"] },
           "file_type": { "enum": ["code", "config", "manifest", "dockerfile", "lockfile", "doc", "binary", "unknown"] },
           "framework": { "type": ["string", "null"] },
-          "risk_class": { "type": "array", "items": { "enum": ["A01", "A02", "A03", "A04", "A05"] }, "description": "文件暴露的 OWASP 类别（类型基底 + 主题词）" },
+          "risk_class": { "type": "array", "items": { "enum": ["A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10"] }, "description": "文件暴露的 OWASP 类别（类型基底 + 主题词）" },
           "topics": { "type": "array", "items": { "type": "string" }, "description": "命中的主题词（sql/web/crypto...）" },
           "changed_functions": {
             "type": "array",

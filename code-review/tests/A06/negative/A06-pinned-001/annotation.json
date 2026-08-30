@@ -1,0 +1,9 @@
+{
+  "sample_id": "A06-pinned-001",
+  "category": "A06",
+  "cwe": "CWE-1104",
+  "vulnerable": false,
+  "pattern": "floating_dependency",
+  "lines": [5],
+  "note": "Dependency is pinned to an exact version; build is reproducible."
+}

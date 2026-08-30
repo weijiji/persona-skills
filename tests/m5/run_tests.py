@@ -80,7 +80,7 @@ def corpus_code(d: Path):
 
 def t1_positives(tmp):
     print("T1 positive 靶场：匹配候选进入 {finding, review}")
-    for cat in ["A01", "A02", "A03", "A04", "A05"]:
+    for cat in ["A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10"]:
         base = CORPUS / cat / "positive"
         if not base.is_dir():
             continue
@@ -102,7 +102,7 @@ def t1_positives(tmp):
 
 def t2_negatives(tmp):
     print("T2 negative 靶场：无匹配候选进入 {finding, review}")
-    for cat in ["A01", "A02", "A03", "A04", "A05"]:
+    for cat in ["A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10"]:
         base = CORPUS / cat / "negative"
         if not base.is_dir():
             continue
@@ -125,7 +125,8 @@ def t2_negatives(tmp):
 def t3_finding_table():
     print("T3 decide：确定性规则 high → finding")
     for pat in ["hardcoded_secret", "permissive_cors", "debug_enabled",
-                "default_credentials", "unpinned_dependency"]:
+                "default_credentials", "unpinned_dependency",
+                "floating_dependency", "tls_verify_disabled"]:
         c = {"pattern": pat, "confidence": "high", "evidence": [{"kind": "sink", "value": "x"}]}
         dec, _ = decide(c)
         check(f"{pat} high → finding", dec == "finding", f"got {dec}")
@@ -155,7 +156,11 @@ def t5_review_table():
     for pat, conf in [("sql_concat", "high"), ("command_concat", "high"),
                       ("eval_injection", "high"), ("xss_innerHTML", "medium"),
                       ("idor_missing_scope_check", "medium"), ("ssrf_user_url", "medium"),
-                      ("weak_crypto", "high"), ("weak_rng", "medium")]:
+                      ("weak_crypto", "high"), ("weak_rng", "medium"),
+                      ("plaintext_password_compare", "medium"), ("weak_password_policy", "medium"),
+                      ("session_expiry_weak", "medium"), ("unsafe_deserialization", "medium"),
+                      ("log_injection", "medium"), ("stacktrace_exposure", "medium"),
+                      ("open_redirect", "medium")]:
         c = {"pattern": pat, "confidence": conf,
              "evidence": [{"kind": "sink", "value": "x"}, {"kind": "sanitizer", "value": "none"}]}
         dec, _ = decide(c)

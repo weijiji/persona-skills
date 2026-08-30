@@ -1,0 +1,9 @@
+{
+  "sample_id": "A10-redirect-003",
+  "category": "A10",
+  "cwe": "CWE-601",
+  "vulnerable": true,
+  "pattern": "open_redirect",
+  "lines": [9],
+  "note": "next_url flows from user input into the redirect target."
+}

@@ -15,6 +15,43 @@ description: 对一次 git 代码变更做 OWASP Top 10:2025 安全审查，产�
 /code-review BASE..HEAD          # 审查指定 commit 范围
 ```
 
+## 运行时流程（`/code-review` 被调用时按此执行）
+
+1. 确认当前在目标 git 仓库内（`git rev-parse --show-toplevel`）。
+2. 记 `SKILL_DIR` = 本文件（SKILL.md）所在目录；以下命令都在目标仓库根目录执行，产物落当前目录。
+3. **静态管线 ①~④**（0 LLM token，逐个跑，任一失败即停）：
+   ```bash
+   python "$SKILL_DIR/workflow/collect.py" -o change.json
+   python "$SKILL_DIR/workflow/analyze.py" -i change.json -o impact_map.json
+   python "$SKILL_DIR/workflow/signal_engine.py" -c change.json -m impact_map.json -o candidate.json
+   python "$SKILL_DIR/workflow/router.py" -c candidate.json -o review_plan.json
+   ```
+4. **初审 ⑤**（首个 LLM 阶段）：打包 → 你（Claude）判定 → 合并。
+   ```bash
+   python "$SKILL_DIR/workflow/reviewer.py" build -r review_plan.json -c candidate.json -o review_pack.json
+   ```
+   读 `review_pack.json`：对每条候选按 `rule_ask` 口径 + `evidence/context` 窗口判
+   `confirm/reject`，写 `review_answers.json`（格式见 `schemas/review_answers.json`）。
+   ```bash
+   python "$SKILL_DIR/workflow/reviewer.py" review -r review_plan.json -c candidate.json \
+       --answers review_answers.json -o finding.json
+   ```
+5. **对抗复核 ⑥**：打包 → 你（Claude）三态判定 → 应用。
+   ```bash
+   python "$SKILL_DIR/workflow/verifier.py" build -i finding.json -o verification_pack.json
+   ```
+   读 `verification_pack.json`：对每条 finding 对抗式判 `confirm/reject/escalate`（escalate 项用更宽
+   局部窗口重审，仍不读完整 diff），写 `verification_answers.json`。
+   ```bash
+   python "$SKILL_DIR/workflow/verifier.py" verify -i finding.json --answers verification_answers.json -o finding.json
+   ```
+6. **去重 ⑦**：
+   ```bash
+   python "$SKILL_DIR/workflow/verifier.py" dedup -i finding.json -o finding.json
+   ```
+7. 读终态 `finding.json`，向用户汇报结构化审查结论（findings + rejected 附录）。
+   若预算不够，分阶段汇报；被拒候选不隐瞒，列入附录供调优（R13）。
+
 ## M2 已落地：Git Collector
 
 `code-review/workflow/collect.py` —— 把一次 git 变更收成 `change.json`（零第三方依赖）。
@@ -38,8 +75,8 @@ python workflow/analyze.py -i change.json -o impact_map.json
 
 - 每文件标注：`framework / file_type / risk_class / topics / changed_functions / relevant_rules`。
 - `changed_functions`：Python 用 stdlib `ast` 精确 def 边界，只报**真正被增删行触及**的函数（上下文行不算）。
-- `relevant_rules`：来自 `rules/registry.json`（18 条规则 × 适用语言）资格粗筛——**只答"该试哪些规则"，不检测**（检测在 M4）。
-- 验收：`tests/m3/run_tests.py`（50 断言，含全量 positive 样本规则资格桥接）。
+- `relevant_rules`：来自 `rules/registry.json`（27 条规则 × 适用语言）资格粗筛——**只答"该试哪些规则"，不检测**（检测在 M4）。
+- 验收：`tests/m3/run_tests.py`（80 断言，含全量 positive 样本规则资格桥接）。
 
 ## M4 已落地：Signal Engine
 
@@ -49,11 +86,11 @@ python workflow/analyze.py -i change.json -o impact_map.json
 python workflow/signal_engine.py -c change.json -m impact_map.json -o candidate.json
 ```
 
-- **18 条规则全部有检测器**（A01~A05）：注入类（sql/command/eval/xss）用 AST 判定"参数化/字面量 vs 插值拼接"；A01 越权用函数级邻接（端点内有无鉴权守卫、有无用户输入、资源访问锚点）；配置/供应链类纯行级正则。
+- **27 条规则全部有检测器**（A01~A10）：注入类（sql/command/eval/xss）用 AST 判定"参数化/字面量 vs 插值拼接"；A01 越权用函数级邻接（端点内有无鉴权守卫、有无用户输入、资源访问锚点）；配置/供应链类纯行级正则；A06~A10（浮动依赖 / 明文口令比对 / 弱口令策略 / 会话过期 / 不安全反序列化 / 关闭 TLS 校验 / 日志注入 / 堆栈泄露 / 开放重定向）在 M8 补齐。
 - 候选只锚定在**本次 diff 新增的行**（改哪看哪）；`confidence`（high/medium/low）喂给 ④ Risk Router。
 - **密钥脱敏在证据窗口构建时**：`hardcoded_secret` 的 evidence/context 一律 scrub，密钥原文不落盘、不进 LLM（ADR-0003）。
 - 共用工具抽到 `workflow/gitutil.py`（②③ 同源，避免漂移）。
-- 验收：`tests/m4/run_tests.py`（99 断言：15 positive 命中 + 10 negative 干净 + 脱敏 + 变更行锚定 + 6 条无靶场规则合成夹具 + 契约）。
+- 验收：`tests/m4/run_tests.py`（182 断言：30 positive 命中 + 20 negative 干净 + 脱敏 + 变更行锚定 + 9 条合成夹具边界 + 契约）。
 
 ## M5 已落地：Risk Router
 
@@ -64,12 +101,12 @@ python workflow/router.py -c candidate.json -o review_plan.json
 ```
 
 - 4 种决策（R9 三层展开）：
-  - **finding**（静态结案为漏洞，0 token）：字面量即漏洞的确定性规则——`hardcoded_secret` / `permissive_cors` / `debug_enabled` / `default_credentials` / `unpinned_dependency`（high 命中时直接出 finding，附 `CONFIRMED_BY_RULE` verdict，跳过 Reviewer）。
+  - **finding**（静态结案为漏洞，0 token）：字面量即漏洞的确定性规则——`hardcoded_secret` / `permissive_cors` / `debug_enabled` / `default_credentials` / `unpinned_dependency` / `floating_dependency` / `tls_verify_disabled`（high 命中时直接出 finding，附 `CONFIRMED_BY_RULE` verdict，跳过 Reviewer；`tls_verify_disabled` 的 disable_warnings 分支 medium 仍走 review）。
   - **review**（进 ⑤ Reviewer）：语义类——注入（sql/command/eval/xss）、越权（idor/ssrf）、弱加密/弱随机数。
   - **skip**（低置信跳过）：基于缺位的弱信号——`handler_without_auth` / `csrf_state_change` / `missing_lockfile` / `untrusted_registry` + 一切 low 置信命中。
   - **clean**（静态结案为无害）：evidence 显示已有防护（sanitizer/鉴权）。
 - 输出 `review_plan.json`：`decisions[]` + `findings_static[]`（0-token findings）+ `review_ids[]`（M6 只审这批）。
-- 验收：`tests/m5/run_tests.py`（52 断言：15 positive 全路由不漏 + 10 negative 不误报 + 决策表 + 计数闭合 + 契约）。
+- 验收：`tests/m5/run_tests.py`（86 断言：30 positive 全路由不漏 + 20 negative 不误报 + 决策表 + 计数闭合 + 契约）。
 
 ## M6 已落地：Security Reviewer
 
@@ -88,7 +125,7 @@ python workflow/reviewer.py review -r review_plan.json -c candidate.json \
 - **Context Budget 硬约束**（R5/R7）：估算提示 token，超 `max_review_tokens=12000` 自动分批，绝不静默截断；单条自身超限的候选显式记录进 `oversized`。
 - **结构化判定**：每条 `verdict(confirm/reject)` + `cwe/severity/reason/fix_hint`；`finalize` 校验答案完整性（缺答/重复/未知 id/非法值均报错）后，与 M5 静态结案合并 → `finding.json`；被拒候选进 `rejected` 附录（R13）。
 - `--scripted` 是确定性兜底判定（无 LLM），用于测试与干跑；真实运行由 Claude 读 `review_pack.json` 产出 `review_answers.json`。
-- 验收：`tests/m6/run_tests.py`（89 断言：15 positive 全有 finding + 10 negative 零误报 + 兜底判定 + 预算分批 + 脱敏贯通 + 契约 + 校验）。
+- 验收：`tests/m6/run_tests.py`（144 断言：30 positive 全有 finding + 20 negative 零误报 + 兜底判定 + 预算分批 + 脱敏贯通 + 契约 + 校验）。
 
 ## M7 已落地：Verifier + Dedup
 
@@ -107,7 +144,8 @@ python workflow/verifier.py dedup  -i finding.json -o finding.json
 - **Context Budget 硬约束**（R5/R7）：`max_verification_tokens=5000`，超预算自动分批，单条自身超限进 `oversized` 显式记录，绝不静默截断。
 - **结构化判定**：每条 `verdict(confirm/reject/escalate)` + `reason`（confirm 可选覆盖 cwe/severity）；`apply_verdicts` 校验答案完整性，`origin_verdict` 保留 M6 来源（CONFIRMED_BY_RULE / CONFIRMED_BY_REVIEWER）。
 - `--scripted` 是确定性兜底对抗复核（无 LLM），用于测试与干跑；真实运行由 Claude 读 `verification_pack.json` 产出 `verification_answers.json`。
-- 验收：`tests/m7/run_tests.py`（114 断言：15 positive 复核+去重后仍有 finding + 10 negative 零误报 + 三态判定 + 预算分批 + 脱敏贯通 + 契约 + dedup 合并 + 校验 + CLI 接线）。
+- 验收：`tests/m7/run_tests.py`（184 断言：30 positive 复核+去重后仍有 finding + 20 negative 零误报 + 三态判定 + 预算分批 + 脱敏贯通 + 契约 + dedup 合并 + 校验 + CLI 接线）。
+  - A03/A06 重叠注记：`unpinned_dependency` 与 `floating_dependency` 同为 CWE-1104，浮动版本行两规则都触发，dedup 按 `(file,cwe)` 合并为一条、保留排序靠前的 A03 命名（设计定稿 §5 已注明的历史命名遗留）；A06 floating 精确 pattern 在 M4/M6 验证，M7 按同族+行号验收。
 
 ## 管线（M1~M7 已落地，⑧ 蓝图）
 
@@ -125,18 +163,18 @@ python workflow/verifier.py dedup  -i finding.json -o finding.json
 
 ## 分类基线
 
-OWASP Top 10:2025 官方 A01~A10（248 CWE）。首批 18 条规则见 `rules/registry.json`（M4 落地检测器）。
+OWASP Top 10:2025 官方 A01~A10（248 CWE）。27 条规则见 `rules/registry.json`（M4 落地检测器）。A01~A05 为首批 18 条（覆盖 A01 越权 / A02 错误配置 / A03 供应链 / A04 加密 / A05 注入）；A06~A10 为 M8 扩展 9 条（覆盖 A06 过时组件 / A07 认证失败 / A08 完整性失败 / A09 日志监控失败 / A10 SSRF 开放重定向）。
 
 ## 进度
 
 - [x] 设计收口（ADR 0001~0004，[设计定稿](../docs/workflow-design-locked.md)）
 - [x] M1 骨架 + Test Corpus 结构
 - [x] M1 Test Corpus 样本生成（A01~A05，15 positive + 10 negative + annotation.json）
-- [x] M2 Git Collector（`workflow/collect.py`，验收 34 + 50 断言通过）
-- [x] M3 Change Analyzer（`workflow/analyze.py` + `rules/registry.json`，验收 50 断言通过）
-- [x] M4 Signal Engine（`workflow/signal_engine.py`，18 条规则检测器，验收 99 断言通过）
-- [x] M5 Risk Router（`workflow/router.py`，三层路由 + 静态结案，验收 52 断言通过）
-- [x] M6 Security Reviewer（`workflow/reviewer.py`，首个 LLM 阶段 + 预算分批 + 合并静态结案，验收 89 断言通过）
-- [x] M7 Verifier + Dedup（`workflow/verifier.py`，对抗式三态复核 + 去重合并，验收 114 断言通过）
-- [ ] M8 A01~A10 扩展
+- [x] M2 Git Collector（`workflow/collect.py`，验收 34 + 100 断言通过）
+- [x] M3 Change Analyzer（`workflow/analyze.py` + `rules/registry.json`，验收 80 断言通过）
+- [x] M4 Signal Engine（`workflow/signal_engine.py`，27 条规则检测器，验收 182 断言通过）
+- [x] M5 Risk Router（`workflow/router.py`，三层路由 + 静态结案，验收 86 断言通过）
+- [x] M6 Security Reviewer（`workflow/reviewer.py`，首个 LLM 阶段 + 预算分批 + 合并静态结案，验收 144 断言通过）
+- [x] M7 Verifier + Dedup（`workflow/verifier.py`，对抗式三态复核 + 去重合并，验收 184 断言通过）
+- [x] M8 A01~A10 扩展（新增 9 规则 + 30 positive/20 negative 靶场，A06~A10 全覆盖，回归 810 断言）
 - [ ] M9 Extra + Token 优化

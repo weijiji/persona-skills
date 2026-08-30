@@ -1,0 +1,9 @@
+{
+  "sample_id": "A10-redirect-004",
+  "category": "A10",
+  "cwe": "CWE-601",
+  "vulnerable": false,
+  "pattern": "open_redirect",
+  "lines": [8],
+  "note": "Redirect target is a hardcoded internal literal; no user influence."
+}

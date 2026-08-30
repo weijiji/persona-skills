@@ -1,0 +1,9 @@
+{
+  "sample_id": "A08-deser-002",
+  "category": "A08",
+  "cwe": "CWE-502",
+  "vulnerable": true,
+  "pattern": "unsafe_deserialization",
+  "lines": [5],
+  "note": "pickle.loads can execute arbitrary code during unpickling of untrusted data."
+}

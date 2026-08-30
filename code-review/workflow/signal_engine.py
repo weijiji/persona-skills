@@ -757,6 +757,283 @@ def d_xss(fe, lines, changed, tree, root):
     return hits
 
 
+# ---------------- A06 漏洞与过时组件 ----------------
+
+# Dockerfile FROM tag 语义：固定 = sha256 digest 或 ≥2 段数字（:3.11 / :3.12-slim）；
+# 浮动 = 无 tag（默认 latest）/ 主版本单段（:3）/ 浮动词（latest/master/main/dev/edge/stable/unstable/next）
+FLOATING_WORD_RE = re.compile(
+    r"(latest|master|main|dev|develop|edge|stable|unstable|next)$", re.I)
+
+
+def _docker_from_tag_floating(line: str) -> bool:
+    l = line.strip()
+    if not l.upper().startswith("FROM"):
+        return False
+    if "@sha256:" in l:
+        return False
+    m = re.search(r"FROM\s+[\w./-]+(?::([\w.-]+))?", l, re.I)
+    tag = m.group(1) if m else None
+    if not tag:
+        return True
+    num = re.match(r"^(\d+(?:\.\d+)*)", tag)
+    if num and len(num.group(1).split(".")) >= 2:
+        return False
+    return True
+
+
+@detector("floating_dependency")
+def d_floating_dep(fe, lines, changed, tree, root):
+    base = os.path.basename(fe["file"]).lower()
+    hits = []
+    if base == "dockerfile":
+        for ln in sorted(changed):
+            l = lines[ln - 1]
+            if _docker_from_tag_floating(l):
+                hits.append(hit(ln, "high", [("config", l)]))
+        return hits
+    if base == "package.json":
+        for ln in sorted(changed):
+            l = lines[ln - 1]
+            for m in PKG_JSON_VERSION_RE.finditer(l):
+                name, ver = m.group(1), m.group(2)
+                if name in PKG_JSON_SKIP_NAMES:
+                    continue
+                if _unpinned_pkg_version(ver):
+                    hits.append(hit(ln, "high", [("config", l)]))
+        return hits
+    for ln in sorted(changed):
+        if _unpinned_req_line(lines[ln - 1]):
+            hits.append(hit(ln, "high", [("config", lines[ln - 1])]))
+    return hits
+
+
+# ---------------- A07 身份识别与认证失败 ----------------
+
+PASSWORD_NAME_RE = re.compile(r"\b(password|passwd|pwd|pin|credential|secret)\b", re.I)
+HASH_CALL_RE = re.compile(
+    r"\b(hashlib|bcrypt|pbkdf2|scrypt|argon2?|check_password_hash|verify_password|hmac|digest|blake2)\b", re.I)
+PLAINTEXT_CMP_LIT_RE = re.compile(
+    r"(?:[\"']([^\"']{1,32})[\"']\s*(==|!=)\s*\b(password|passwd|pwd)\b"
+    r"|\b(password|passwd|pwd)\b\s*(==|!=)\s*[\"']([^\"']{1,32})[\"'])", re.I)
+PLAINTEXT_CMP_ATTR_RE = re.compile(r"\b[\w.]*\.(password|passwd|pwd)\b\s*(==|!=)\s*[\w]+\b", re.I)
+
+
+def fn_has_user_input(fn, lines) -> bool:
+    if fn is None:
+        return False
+    body = "\n".join(lines[fn[1] - 1: fn[2]])
+    return bool(USER_INPUT_RE.search(body))
+
+
+@detector("plaintext_password_compare")
+def d_plaintext_pwd(fe, lines, changed, tree, root):
+    hits = []
+    for ln in sorted(changed):
+        l = lines[ln - 1]
+        if HASH_CALL_RE.search(l):
+            continue                       # 哈希比对是安全用法，跳过
+        if PLAINTEXT_CMP_LIT_RE.search(l) or PLAINTEXT_CMP_ATTR_RE.search(l):
+            fn = function_at_line(tree, ln) if tree is not None else None
+            conf = "high" if fn_has_user_input(fn, lines) else "medium"
+            hits.append(hit(ln, conf, [("sink", l),
+                                       ("user_controlled", "同函数内有用户输入" if conf == "high" else "?"),
+                                       ("sanitizer", "none")]))
+    return hits
+
+
+POLICY_MINLEN_RE = re.compile(r"min_length\s*[\"']?\s*[=:]\s*([0-9]+)", re.I)
+POLICY_LEN_RE = re.compile(r"len\s*\(\s*(password|passwd|pwd)\s*\)\s*<{1,2}\s*([0-9]+)", re.I)
+POLICY_LEN_JS_RE = re.compile(r"\b(password|passwd|pwd)\.length\s*<\s*([0-9]+)", re.I)
+
+
+@detector("weak_password_policy")
+def d_weak_pwd_policy(fe, lines, changed, tree, root):
+    hits = []
+    for ln in sorted(changed):
+        l = lines[ln - 1]
+        weak = None
+        m = POLICY_MINLEN_RE.search(l)
+        if m and int(m.group(1)) < 8:
+            weak = f"min_length={m.group(1)}"
+        if weak is None:
+            m = POLICY_LEN_RE.search(l)
+            if m and int(m.group(2)) < 8:
+                weak = f"len(password)<{m.group(2)}"
+        if weak is None:
+            m = POLICY_LEN_JS_RE.search(l)
+            if m and int(m.group(2)) < 8:
+                weak = f"password.length<{m.group(2)}"
+        if weak is not None:
+            hits.append(hit(ln, "medium", [("sink", l), ("sanitizer", "none")]))
+    return hits
+
+
+SESSION_PERM_RE = re.compile(r"session\.permanent\s*=\s*True\b", re.I)
+SESSION_LIFETIME_LONG_RE = re.compile(
+    r"\b(permanent_session_lifetime|remember_cookie_duration)\b.*?timedelta\s*\(\s*(?:days|weeks)\s*=\s*([0-9]+)", re.I)
+SESSION_LIFETIME_SHORT_RE = re.compile(
+    r"\b(permanent_session_lifetime|remember_cookie_duration)\b.*?timedelta\s*\(\s*(hours|minutes|seconds)", re.I)
+
+
+@detector("session_expiry_weak")
+def d_session_expiry(fe, lines, changed, tree, root):
+    hits = []
+    for ln in sorted(changed):
+        l = lines[ln - 1]
+        if SESSION_LIFETIME_SHORT_RE.search(l):
+            continue                       # 小时/分钟级短超时 → 安全
+        if SESSION_PERM_RE.search(l):
+            hits.append(hit(ln, "medium", [("sink", l), ("config", l), ("sanitizer", "none")]))
+            continue
+        m = SESSION_LIFETIME_LONG_RE.search(l)
+        if m and int(m.group(2)) >= 7:
+            hits.append(hit(ln, "medium", [("sink", l), ("config", l), ("sanitizer", "none")]))
+    return hits
+
+
+# ---------------- A08 软件与数据完整性失败 ----------------
+
+DESER_OTHER_RE = re.compile(
+    r"\b(pickle|cPickle|marshal|joblib|shelve)\.(load|loads)\s*\(|read_pickle\s*\(|torch\.load\s*\(", re.I)
+DESER_YAML_RE = re.compile(r"\byaml\.load\s*\(", re.I)
+DESER_YAML_SAFE_RE = re.compile(r"Loader\s*=\s*(?:yaml\.)?(?:CSafe|Safe|Full)Loader", re.I)
+
+
+@detector("unsafe_deserialization")
+def d_unsafe_deser(fe, lines, changed, tree, root):
+    hits = []
+    for ln in sorted(changed):
+        l = lines[ln - 1]
+        hit_line = False
+        if DESER_OTHER_RE.search(l):
+            hit_line = True
+        elif DESER_YAML_RE.search(l) and not DESER_YAML_SAFE_RE.search(l):
+            hit_line = True
+        if not hit_line:
+            continue
+        fn = function_at_line(tree, ln) if tree is not None else None
+        conf = "high" if fn_has_user_input(fn, lines) else "medium"
+        hits.append(hit(ln, conf, [("sink", l), ("sanitizer", "none")]))
+    return hits
+
+
+TLS_VERIFY_FALSE_RE = re.compile(r"verify\s*=\s*False\b", re.I)
+TLS_UNVERIFIED_CTX_RE = re.compile(r"ssl\._create_unverified_context\s*\(", re.I)
+TLS_CERT_NONE_RE = re.compile(r"\bCERT_NONE\b", re.I)
+TLS_CHECK_HOSTNAME_RE = re.compile(r"check_hostname\s*=\s*False\b", re.I)
+TLS_DISABLE_WARN_RE = re.compile(r"urllib3\.disable_warnings\s*\(", re.I)
+
+
+@detector("tls_verify_disabled")
+def d_tls_verify(fe, lines, changed, tree, root):
+    hits = []
+    for ln in sorted(changed):
+        l = lines[ln - 1]
+        if (TLS_VERIFY_FALSE_RE.search(l) or TLS_UNVERIFIED_CTX_RE.search(l)
+                or TLS_CERT_NONE_RE.search(l) or TLS_CHECK_HOSTNAME_RE.search(l)):
+            hits.append(hit(ln, "high", [("config", l), ("sink", l)]))
+        elif TLS_DISABLE_WARN_RE.search(l):
+            hits.append(hit(ln, "medium", [("config", l), ("sink", l)]))
+    return hits
+
+
+# ---------------- A09 安全日志与监控失败 ----------------
+
+LOG_CALL_RE = re.compile(r"\b(logging|logger)\.(info|warning|error|debug|critical|exception)\s*\(", re.I)
+LOG_INTERP_RE = re.compile(r"(f[\"']|[\"']\s*\+|\+[\"']|\.format\s*\(|`|\$\{)", re.I)
+
+
+@detector("log_injection")
+def d_log_injection(fe, lines, changed, tree, root):
+    hits = []
+    for ln in sorted(changed):
+        l = lines[ln - 1]
+        m = LOG_CALL_RE.search(l)
+        if not m:
+            continue
+        arg_start = l.find("(", m.start())
+        first_arg = l[arg_start + 1:].split(",", 1)[0] if arg_start != -1 else ""
+        if LOG_INTERP_RE.search(first_arg) or re.search(r"request\.|input\s*\(", first_arg):
+            fn = function_at_line(tree, ln) if tree is not None else None
+            conf = "high" if fn_has_user_input(fn, lines) else "medium"
+            hits.append(hit(ln, conf, [("sink", l),
+                                       ("user_controlled", "同函数内有用户输入" if conf == "high" else "?"),
+                                       ("sanitizer", "none")]))
+    return hits
+
+
+STACKTRACE_RETURN_RE = re.compile(
+    r"\b(?:return|send|jsonify|Response)\b[^;\n]{0,60}\btraceback\.(format_exc|format_exception|format_stack)\b", re.I)
+STACKTRACE_PRINT_RE = re.compile(r"\btraceback\.print_exc\s*\(", re.I)
+STACKTRACE_STR_EXC_RE = re.compile(r"return\s+str\(\s*(e|err|exc|exception|error)\s*\)", re.I)
+
+
+def _body_has_except(fn, lines) -> bool:
+    body = "\n".join(lines[fn[1] - 1: fn[2]])
+    return bool(re.search(r"\bexcept\b", body))
+
+
+@detector("stacktrace_exposure")
+def d_stacktrace(fe, lines, changed, tree, root):
+    hits = []
+    for ln in sorted(changed):
+        l = lines[ln - 1]
+        if STACKTRACE_RETURN_RE.search(l) or STACKTRACE_PRINT_RE.search(l):
+            hits.append(hit(ln, "medium", [("sink", l), ("sanitizer", "none")]))
+            continue
+        if STACKTRACE_STR_EXC_RE.search(l):
+            fn = function_at_line(tree, ln) if tree is not None else None
+            if fn and _body_has_except(fn, lines):
+                hits.append(hit(ln, "medium", [("sink", l), ("sanitizer", "none")]))
+    return hits
+
+
+# ---------------- A10 服务端请求伪造 ----------------
+
+REDIRECT_CALL_RE = re.compile(r"\b(redirect|redirect_to|Redirect|send_redirect)\s*\(([^)]*)\)", re.I)
+REDIRECT_HEADER_RE = re.compile(r"[\"']Location[\"']\s*[:=]\s*([^,\s}]+)", re.I)
+
+
+@detector("open_redirect")
+def d_open_redirect(fe, lines, changed, tree, root):
+    hits = []
+    for ln in sorted(changed):
+        l = lines[ln - 1]
+        m = REDIRECT_CALL_RE.search(l)
+        if not m:
+            mh = REDIRECT_HEADER_RE.search(l)
+            if mh and mh.group(1).strip() and mh.group(1).strip()[0] not in "\"'":
+                hits.append(hit(ln, "high", [("sink", l),
+                                             ("user_controlled", mh.group(1)), ("sanitizer", "none")]))
+            continue
+        arg = m.group(2).strip()
+        if not arg or arg[0] in "\"'":
+            continue                       # 字面量 → 安全
+        if "url_for" in arg:
+            continue                       # 蓝图内部跳转 → 安全
+        if re.search(r"request\.|input\s*\(", arg):
+            hits.append(hit(ln, "high", [("sink", l),
+                                         ("user_controlled", arg), ("sanitizer", "none")]))
+            continue
+        # 函数内赋值回溯：arg 是变量，查它在函数体里的赋值来源
+        fn = function_at_line(tree, ln) if tree is not None else None
+        rhs = ""
+        if fn:
+            body = "\n".join(lines[fn[1] - 1: fn[2]])
+            am = re.search(r"\b" + re.escape(arg) + r"\b\s*=\s*([^\n]+)", body)
+            if am:
+                rhs = am.group(1).strip()
+        if re.search(r"request\.|input\s*\(", rhs):
+            hits.append(hit(ln, "high", [("sink", l),
+                                         ("user_controlled", rhs), ("sanitizer", "none")]))
+        elif re.search(r"\b[A-Z]\w*\.get\s*\(", rhs):
+            continue                       # 白名单 dict 查表 → 安全
+        else:
+            hits.append(hit(ln, "medium", [("sink", l),
+                                           ("user_controlled", rhs or arg), ("sanitizer", "none")]))
+    return hits
+
+
 # --------------------------------------------------------------------------
 # 候选组装（证据窗口 + 脱敏）
 # --------------------------------------------------------------------------

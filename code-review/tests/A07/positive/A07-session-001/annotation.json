@@ -1,0 +1,9 @@
+{
+  "sample_id": "A07-session-001",
+  "category": "A07",
+  "cwe": "CWE-613",
+  "vulnerable": true,
+  "pattern": "session_expiry_weak",
+  "lines": [5],
+  "note": "Session lifetime is set to 30 days, far beyond a reasonable short timeout."
+}

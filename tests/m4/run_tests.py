@@ -11,7 +11,7 @@ M4 Signal Engine 验收测试（无第三方依赖，仅 git + python3）。
   T4 变更行锚定：所有候选行必须落在 diff 新增行上
   T5 无靶场规则的合成夹具：handler_without_auth / csrf / xxe / missing_lockfile /
      untrusted_registry / xss_innerHTML 各 1 正 1 负
-  T6 registry 18 条规则全部有检测器
+  T6 registry 27 条规则全部有检测器
   T7 候选契约：字段齐全、confidence 枚举、evidence kind 枚举、candidate_id 唯一
 """
 import json
@@ -87,7 +87,7 @@ def corpus_code(d: Path):
 
 def t1_positives(tmp):
     print("T1 全量 positive 靶场：每样本产对应候选 + 行号±1")
-    for cat in ["A01", "A02", "A03", "A04", "A05"]:
+    for cat in ["A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10"]:
         base = CORPUS / cat / "positive"
         if not base.is_dir():
             continue
@@ -117,7 +117,7 @@ def t1_positives(tmp):
 
 def t2_negatives(tmp):
     print("T2 全量 negative 靶场：不产出同名候选")
-    for cat in ["A01", "A02", "A03", "A04", "A05"]:
+    for cat in ["A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10"]:
         base = CORPUS / cat / "negative"
         if not base.is_dir():
             continue
@@ -157,7 +157,7 @@ def t3_redaction(tmp):
 def t4_changed_anchor(tmp):
     print("T4 变更行锚定：候选行必须是 diff 新增行")
     total = 0
-    for cat in ["A01", "A02", "A03", "A04", "A05"]:
+    for cat in ["A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10"]:
         base = CORPUS / cat / "positive"
         if not base.is_dir():
             continue
@@ -271,9 +271,43 @@ def t5_synthetic(tmp):
     check("xss 负例（字面量）不产出",
           not any(c["pattern"] == "xss_innerHTML" for c in cand["candidates"]))
 
+    # session_expiry_weak：session.permanent=True 正 / 短超时负
+    r = repo(tmp, "t5-sess-pos")
+    cand, _ = pipeline(r, {"session.py":
+                           "from flask import Flask, session\napp = Flask(__name__)\n"
+                           '@app.route("/login")\n'
+                           "def login():\n    session.permanent = True\n    return 'ok'\n"})
+    check("session 正例（session.permanent=True）产 session_expiry_weak",
+          any(c["pattern"] == "session_expiry_weak" for c in cand["candidates"]))
+    r = repo(tmp, "t5-sess-neg")
+    cand, _ = pipeline(r, {"session.py":
+                           "from datetime import timedelta\nfrom flask import Flask\napp = Flask(__name__)\n"
+                           'app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=2)\n'})
+    check("session 负例（短超时）不产出",
+          not any(c["pattern"] == "session_expiry_weak" for c in cand["candidates"]))
+
+    # unsafe_deserialization：yaml.load + Loader=SafeLoader 负
+    r = repo(tmp, "t5-yaml-neg")
+    cand, _ = pipeline(r, {"deser.py":
+                           "import yaml\n\n"
+                           "def load(data):\n"
+                           "    return yaml.load(data, Loader=yaml.SafeLoader)\n"})
+    check("deser 负例（Loader=SafeLoader）不产出",
+          not any(c["pattern"] == "unsafe_deserialization" for c in cand["candidates"]))
+
+    # floating_dependency：Dockerfile 裸 tag 正 / 固定版本负
+    r = repo(tmp, "t5-float-pos")
+    cand, _ = pipeline(r, {"Dockerfile": "FROM python\n"})
+    check("floating 正例（FROM python 裸 tag）产 floating_dependency",
+          any(c["pattern"] == "floating_dependency" for c in cand["candidates"]))
+    r = repo(tmp, "t5-float-neg")
+    cand, _ = pipeline(r, {"Dockerfile": "FROM python:3.12\n"})
+    check("floating 负例（FROM python:3.12 固定）不产出",
+          not any(c["pattern"] == "floating_dependency" for c in cand["candidates"]))
+
 
 def t6_registry_coverage():
-    print("T6 registry 18 条规则全部有检测器")
+    print("T6 registry 27 条规则全部有检测器")
     reg = {r["name"] for r in json.loads(REGISTRY.read_text(encoding="utf-8"))["rules"]}
     missing = reg - set(DETECTORS)
     check("registry 全部在 DETECTORS", not missing, f"missing {missing}")

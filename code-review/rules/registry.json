@@ -40,6 +40,29 @@
     { "name": "eval_injection",   "category": "A05", "cwe": "CWE-94", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby"],
       "review": { "ask": "eval/exec/compile 是否执行了非字面量、可能用户可控的代码？", "fix": "避免动态执行；用安全解析器替代 eval。" } },
     { "name": "xss_innerHTML",    "category": "A05", "cwe": "CWE-79", "langs": ["python", "javascript", "typescript"],
-      "review": { "ask": "是否把非字面量、可能包含用户输入的数据直接写入 innerHTML 等 HTML 注入点？", "fix": "用 textContent，或对输出做上下文转义。" } }
+      "review": { "ask": "是否把非字面量、可能包含用户输入的数据直接写入 innerHTML 等 HTML 注入点？", "fix": "用 textContent，或对输出做上下文转义。" } },
+
+    { "name": "floating_dependency", "category": "A06", "cwe": "CWE-1104", "langs": ["manifest", "dockerfile"],
+      "review": { "ask": "依赖或基础镜像版本是否使用了浮动/未锁定标识（latest、裸镜像名、主版本号如 :3、范围 >= ^ ~）？构建会随时间解析到不一致甚至带漏洞的版本。", "fix": "固定精确版本：requirements 用 ==，package.json 用精确版本，Dockerfile 用带补丁号的 tag 或 sha256 digest。" } },
+
+    { "name": "plaintext_password_compare", "category": "A07", "cwe": "CWE-916", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby", "csharp"],
+      "review": { "ask": "口令是否以明文与硬编码字面量或明文常量比较（password == \"...\" / user.password == x），而没有经过哈希比对？", "fix": "仅存储哈希（bcrypt/argon2/pbkdf2），用 check_password_hash/verify 比对，杜绝明文口令比较。" } },
+    { "name": "weak_password_policy", "category": "A07", "cwe": "CWE-521", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby", "csharp"],
+      "review": { "ask": "口令策略是否过弱（最小长度 <8、只查长度不查复杂度、min_length 设置过低）？", "fix": "最小长度提到 12+，要求字母/数字/符号组合，参照 NIST 口令指南。" } },
+    { "name": "session_expiry_weak", "category": "A07", "cwe": "CWE-613", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby", "csharp"],
+      "review": { "ask": "会话是否缺乏合理过期（session.permanent=True 却未设短超时，或 PERMANENT_SESSION_LIFETIME 为数天/数十天，或 remember_me 长期有效）？", "fix": "设置短期会话超时（如 <24h，敏感系统 <15min），并在注销/改密时使会话失效。" } },
+
+    { "name": "unsafe_deserialization", "category": "A08", "cwe": "CWE-502", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby", "csharp"],
+      "review": { "ask": "是否对不可信数据执行不安全反序列化（yaml.load 未用 SafeLoader、pickle/cPickle/marshal/joblib.load 等）？", "fix": "改用安全反序列化：yaml.safe_load、json；pickle 系对来源与完整性做 HMAC 签名校验。" } },
+    { "name": "tls_verify_disabled", "category": "A08", "cwe": "CWE-295", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby", "csharp"],
+      "review": { "ask": "TLS 证书/主机名校验是否被关闭或降级（verify=False、_create_unverified_context、check_hostname=False、CERT_NONE）？", "fix": "保持证书与主机名校验开启；确需自签证书时注入受信 CA，而不是关闭校验。" } },
+
+    { "name": "log_injection", "category": "A09", "cwe": "CWE-117", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby", "csharp"],
+      "review": { "ask": "日志是否记录了未经净化、可能含换行/控制字符的用户输入（拼接或 f-string 进 logger），可被日志伪造/注入利用？", "fix": "对用户输入做 CRLF 净化，用结构化日志 + 参数占位符（%s 不拼接）。" } },
+    { "name": "stacktrace_exposure", "category": "A09", "cwe": "CWE-209", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby", "csharp"],
+      "review": { "ask": "异常堆栈/内部错误信息是否直接返回给客户端（return traceback.format_exc()、return str(e)、Response 含 traceback）？", "fix": "客户端只返回通用错误码，详细堆栈只写服务端日志。" } },
+
+    { "name": "open_redirect", "category": "A10", "cwe": "CWE-601", "langs": ["python", "javascript", "typescript", "go", "java", "php", "ruby", "csharp"],
+      "review": { "ask": "重定向目标是否由用户输入直接决定且未经白名单校验（redirect(request.args['next']) 等），可把用户导向钓鱼站点？", "fix": "校验重定向目标在受信域名/路径白名单内，或用逻辑跳转而非 open redirect。" } }
   ]
 }

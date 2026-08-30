@@ -1,0 +1,9 @@
+{
+  "sample_id": "A07-plaintext-001",
+  "category": "A07",
+  "cwe": "CWE-916",
+  "vulnerable": true,
+  "pattern": "plaintext_password_compare",
+  "lines": [9],
+  "note": "User-supplied password is compared against a hardcoded literal instead of a stored hash."
+}

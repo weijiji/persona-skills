@@ -1,0 +1,9 @@
+{
+  "sample_id": "A07-policy-002",
+  "category": "A07",
+  "cwe": "CWE-521",
+  "vulnerable": false,
+  "pattern": "weak_password_policy",
+  "lines": [1],
+  "note": "Password policy enforces a 12-character minimum and special characters."
+}

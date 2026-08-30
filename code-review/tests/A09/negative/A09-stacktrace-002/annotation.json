@@ -1,0 +1,9 @@
+{
+  "sample_id": "A09-stacktrace-002",
+  "category": "A09",
+  "cwe": "CWE-209",
+  "vulnerable": false,
+  "pattern": "stacktrace_exposure",
+  "lines": [10],
+  "note": "Traceback goes to the server log only; the client gets a generic message."
+}

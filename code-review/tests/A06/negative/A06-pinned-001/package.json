@@ -1,0 +1,7 @@
+{
+  "name": "demo-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "flask": "3.0.3"
+  }
+}

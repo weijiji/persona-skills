@@ -1,0 +1,9 @@
+{
+  "sample_id": "A06-floating-003",
+  "category": "A06",
+  "cwe": "CWE-1104",
+  "vulnerable": true,
+  "pattern": "floating_dependency",
+  "lines": [1],
+  "note": "Dependency uses a >= range, resolving to whatever newer flask is published."
+}

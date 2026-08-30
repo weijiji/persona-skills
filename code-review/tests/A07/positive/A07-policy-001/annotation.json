@@ -1,0 +1,9 @@
+{
+  "sample_id": "A07-policy-001",
+  "category": "A07",
+  "cwe": "CWE-521",
+  "vulnerable": true,
+  "pattern": "weak_password_policy",
+  "lines": [1],
+  "note": "Password policy allows 4-character passwords, far below any reasonable minimum."
+}

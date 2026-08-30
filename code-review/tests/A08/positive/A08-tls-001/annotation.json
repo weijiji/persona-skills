@@ -1,0 +1,9 @@
+{
+  "sample_id": "A08-tls-001",
+  "category": "A08",
+  "cwe": "CWE-295",
+  "vulnerable": true,
+  "pattern": "tls_verify_disabled",
+  "lines": [5],
+  "note": "TLS certificate verification is disabled, exposing the request to MITM attacks."
+}

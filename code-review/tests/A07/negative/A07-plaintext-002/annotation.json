@@ -1,0 +1,9 @@
+{
+  "sample_id": "A07-plaintext-002",
+  "category": "A07",
+  "cwe": "CWE-916",
+  "vulnerable": false,
+  "pattern": "plaintext_password_compare",
+  "lines": [6],
+  "note": "Password digest is verified against a stored hash with PBKDF2; no plaintext comparison."
+}

@@ -22,7 +22,7 @@
         "required": ["candidate_id", "category", "pattern", "file", "line", "confidence", "evidence", "context"],
         "properties": {
           "candidate_id": { "type": "string" },
-          "category": { "type": "string", "enum": ["A01", "A02", "A03", "A04", "A05"] },
+          "category": { "type": "string", "enum": ["A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10"] },
           "pattern": { "type": "string", "description": "命中的规则名，如 sql_concat" },
           "file": { "type": "string" },
           "line": { "type": "integer", "description": "锚定行：必须是本次 diff 新增的行" },

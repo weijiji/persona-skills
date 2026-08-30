@@ -1,0 +1,9 @@
+{
+  "sample_id": "A08-deser-001",
+  "category": "A08",
+  "cwe": "CWE-502",
+  "vulnerable": true,
+  "pattern": "unsafe_deserialization",
+  "lines": [5],
+  "note": "yaml.load with no Loader allows arbitrary object instantiation on untrusted data."
+}

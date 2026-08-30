@@ -39,7 +39,7 @@ FILE_TYPE_BY_LANG = {
 
 # 文件类型 → 默认暴露类别（不靠内容，类型即风险面）
 FILE_TYPE_RISK_BASE = {
-    "manifest": ["A03"], "dockerfile": ["A03"], "lockfile": ["A03"],
+    "manifest": ["A03", "A06"], "dockerfile": ["A03", "A06"], "lockfile": ["A03", "A06"],
     "config": ["A02", "A04"], "code": [], "doc": [], "unknown": [],
 }
 
@@ -66,13 +66,28 @@ TOPIC_PATTERNS = {
     "xml": [r"xml\.etree", r"ElementTree", r"lxml", r"minidom", r"XMLParser", r"fromstring"],
     "cors": [r"\bCORS\b", r"allow_origins", r"access-control-allow-origin", r"cross_origin"],
     "debug": [r"debug\s*=\s*True", r"app\.run\s*\([^)]*debug", r"DEBUG\s*=\s*True", r"FLASK_DEBUG"],
+    "deser": [r"\bpickle\b", r"cPickle", r"yaml\.load\s*\(", r"yaml\.load_all\s*\(",
+              r"marshal\.loads\s*\(", r"joblib\.load\s*\(", r"read_pickle\s*\(", r"shelve\.open\s*\("],
+    "tls": [r"verify\s*=\s*False", r"_create_unverified_context", r"check_hostname\s*=\s*False",
+            r"\bCERT_NONE\b", r"disable_warnings\s*\("],
+    "authn": [r"session\.permanent", r"permanent_session_lifetime", r"SESSION_COOKIE_",
+              r"REMEMBER_COOKIE_", r"remember_me\s*=", r"timedelta\s*\(\s*days\s*=\s*\d",
+              r"password_policy", r"min_length", r"check_password\s*\(|verify_password\s*\(|hash_password\s*\(",
+              r"password\s*==|==\s*password"],
+    "redirect": [r"redirect\s*\(|send_redirect\s*\(|redirect_to\s*=|Location\s*[=:]"],
+    "logging": [r"logging\.(info|warning|error|debug|critical|exception)\s*\(",
+                r"logger\.\w+\s*\(", r"getLogger\s*\("],
+    "stacktrace": [r"traceback\.", r"format_exc\s*\(", r"print_exc\s*\(", r"exc_info"],
 }
 
 TOPIC_TO_CATEGORIES = {
     "sql": ["A05"], "cmd": ["A05"], "eval": ["A05"], "xss": ["A05"],
     "web": ["A01", "A05"], "auth": ["A01"], "url": ["A01"],
     "crypto": ["A04"], "hardkey": ["A04"],
-    "creds": ["A02"], "xml": ["A02"], "cors": ["A02"], "debug": ["A02"],
+    "creds": ["A02", "A07"], "xml": ["A02"], "cors": ["A02"], "debug": ["A02"],
+    "deser": ["A08"], "tls": ["A08"],
+    "authn": ["A07"], "redirect": ["A10"],
+    "logging": ["A09"], "stacktrace": ["A09"],
 }
 
 # 框架识别：扫整个文件文本

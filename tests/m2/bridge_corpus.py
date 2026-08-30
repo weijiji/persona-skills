@@ -35,7 +35,7 @@ def hunk_covers(hunks, line):
 
 def main():
     samples = []
-    for cat in ["A01", "A02", "A03", "A04", "A05"]:
+    for cat in ["A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10"]:
         for polarity in ["positive", "negative"]:
             base = CORPUS / cat / polarity
             if not base.is_dir():

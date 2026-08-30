@@ -1,0 +1,9 @@
+{
+  "sample_id": "A10-redirect-005",
+  "category": "A10",
+  "cwe": "CWE-601",
+  "vulnerable": false,
+  "pattern": "open_redirect",
+  "lines": [14],
+  "note": "Redirect target must be one of a whitelist of allowed destinations."
+}

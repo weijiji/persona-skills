@@ -64,7 +64,7 @@
 - **finding.json**（Reviewer/Verifier 输出）：`{finding_id, candidate_id, category, cwe, severity, verdict, confidence, location, evidence[], fix_hint}`。
 - **annotation.json**（Ground Truth，Test Corpus）：`{sample_id, category, cwe, vulnerable, pattern, lines[], note}`。
 
-## 5. 规则基线（M4 首批 18 条）
+## 5. 规则基线（M4 首批 18 条 + M8 扩展 9 条，共 27 条）
 
 | 类别 | 关键 CWE | 规则 |
 | --- | --- | --- |
@@ -73,6 +73,13 @@
 | A03 Software Supply Chain Failures | 477, 1104, 1329, 1395 | `unpinned_dependency` / `missing_lockfile` / `untrusted_registry` |
 | A04 Cryptographic Failures | 327, 331, 338 | `hardcoded_secret` / `weak_crypto` / `weak_rng` |
 | A05 Injection | 89, 79, 78, 94/95 | `sql_concat` / `command_concat` / `eval_injection` / `xss_innerHTML` |
+| A06 Vulnerable & Outdated Components | 1104 | `floating_dependency` |
+| A07 Identification & Auth Failures | 916, 521, 613 | `plaintext_password_compare` / `weak_password_policy` / `session_expiry_weak` |
+| A08 Software & Data Integrity Failures | 502, 295 | `unsafe_deserialization` / `tls_verify_disabled` |
+| A09 Security Logging & Monitoring Failures | 117, 209 | `log_injection` / `stacktrace_exposure` |
+| A10 SSRF | 601 | `open_redirect` |
+
+> **注（历史命名遗留）**：A06~A10 沿用 OWASP Top 10:2025 官方类别（A06 过时组件 / A07 认证失败 / A08 完整性失败 / A09 日志监控失败 / A10 SSRF）。现有 A01~A05 的 18 条规则与测试不动；其中 A03「供应链」沿用 2025 草案时代的混合命名，与官方 A06 语义重叠（`unpinned_dependency` 与 `floating_dependency` 同为 CWE-1104）——两规则同行触发时 dedup 按 `(file, cwe)` 合并为一条，保留排序靠前的 A03 命名。A01 越权也内含 SSRF 部分重叠（A01/A10），均为文档注明、不作工程隔离。
 
 ## 6. 里程碑 M1~M9
 
@@ -88,7 +95,7 @@
 | M8 | A01~A10 扩展 | 冲 60 分 |
 | M9 | Extra + Token 优化 | 冲榜 |
 
-**当前位置**：M8 A01~A10 扩展施工前（M1~M7 已完成验收：骨架+靶场 / Git Collector / Change Analyzer / Signal Engine / Risk Router / Security Reviewer / Verifier + Dedup，回归 488/488；交付见 [SKILL.md](../code-review/SKILL.md)）。
+**当前位置**：M8 A01~A10 扩展已完成（M1~M8 验收：骨架+靶场 / Git Collector / Change Analyzer / Signal Engine / Risk Router / Security Reviewer / Verifier + Dedup / A01~A10 扩展，回归 810/810；交付见 [SKILL.md](../code-review/SKILL.md)）。M9 Extra + Token 优化与 ⑧ 报告为蓝图。
 
 ## 7. 第一版明确不做
 

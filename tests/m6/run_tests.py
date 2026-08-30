@@ -92,7 +92,7 @@ def corpus_code(d: Path):
 
 def t1_positives(tmp):
     print("T1 全量 positive 靶场：每样本产出匹配 finding")
-    for cat in ["A01", "A02", "A03", "A04", "A05"]:
+    for cat in ["A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10"]:
         base = CORPUS / cat / "positive"
         if not base.is_dir():
             continue
@@ -120,7 +120,7 @@ def t1_positives(tmp):
 
 def t2_negatives(tmp):
     print("T2 全量 negative 靶场：无匹配 finding")
-    for cat in ["A01", "A02", "A03", "A04", "A05"]:
+    for cat in ["A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10"]:
         base = CORPUS / cat / "negative"
         if not base.is_dir():
             continue

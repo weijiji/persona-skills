@@ -120,7 +120,7 @@ def t2_manifest(tmp):
     _, impact = pipeline(d)
     f = next(x for x in impact["files"] if x["file"] == "requirements.txt")
     check("file_type==manifest", f["file_type"] == "manifest")
-    check("risk_class==[A03]", f["risk_class"] == ["A03"], f"got {f['risk_class']}")
+    check("risk_class==[A03,A06]", f["risk_class"] == ["A03", "A06"], f"got {f['risk_class']}")
     check("relevant 含 unpinned/missing_lockfile",
           {"unpinned_dependency", "missing_lockfile"}.issubset(f["relevant_rules"]))
     check("changed_functions 为空", f["changed_functions"] == [])
@@ -163,14 +163,14 @@ def t4_no_topic(tmp):
 def t5_registry_contract(tmp):
     print("T5 registry 契约：字段齐全 + 靶场 pattern 全覆盖")
     reg = json.loads(REGISTRY.read_text(encoding="utf-8"))["rules"]
-    check("18 条规则", len(reg) == 18, f"got {len(reg)}")
+    check("27 条规则", len(reg) == 27, f"got {len(reg)}")
     check("每条含 name/category/cwe/langs",
           all({"name", "category", "cwe", "langs"}.issubset(r) for r in reg))
     check("规则名唯一", len({r["name"] for r in reg}) == len(reg))
-    check("category 合法", all(r["category"] in {"A01", "A02", "A03", "A04", "A05"} for r in reg))
+    check("category 合法", all(r["category"] in {"A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10"} for r in reg))
     names = {r["name"] for r in reg}
     missing = []
-    for cat in ["A01", "A02", "A03", "A04", "A05"]:
+    for cat in ["A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10"]:
         for polarity in ["positive", "negative"]:
             base = CORPUS / cat / polarity
             if not base.is_dir():
@@ -189,7 +189,7 @@ def t6_corpus_bridge(tmp):
     print("T6 桥接：全量 positive 样本的规则必须 eligible")
     reg_names = {r["name"] for r in json.loads(REGISTRY.read_text(encoding="utf-8"))["rules"]}
     samples = []
-    for cat in ["A01", "A02", "A03", "A04", "A05"]:
+    for cat in ["A01", "A02", "A03", "A04", "A05", "A06", "A07", "A08", "A09", "A10"]:
         base = CORPUS / cat / "positive"
         if not base.is_dir():
             continue
