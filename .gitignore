@@ -8,3 +8,4 @@ backend/app/frontend/
 /playwright/.cache/
 /frontend
 .specstory
+/logs

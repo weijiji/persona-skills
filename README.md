@@ -171,4 +171,7 @@ python ../../tests/m7/run_tests.py   # 全量回归 184 断言（M7 单里程碑
 
 - **已完成**：M1 骨架+靶场 → M8 A01~A10 扩展，回归 **810/810**（M2 34 / 桥 100 / M3 80 / M4 182 / M5 86 / M6 144 / M7 184）。规则 27 条，覆盖 OWASP Top 10:2025 官方 A01~A10。
 - **进行中**：⑧ 报告（人类可读 Markdown 摘要）与 M9（Extra + Token 优化）为蓝图。
+- **⑧ 报告类别门禁（已落地）**：`workflow/report_check.py` 校验报告「OWASP 2025」列编号与
+  `rules/registry.json` 分类基线一致（注入=A05 而非官方 A03）。报告定稿前必须通过（见
+  [code-review/SKILL.md](code-review/SKILL.md) 运行时流程第 7 步），回归见 `tests/report/run_tests.py`（34 断言）。
 - 设计定稿见 [docs/workflow-design-locked.md](docs/workflow-design-locked.md)，数据契约见 [code-review/schemas/](code-review/schemas/)。

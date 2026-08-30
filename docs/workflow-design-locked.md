@@ -30,7 +30,7 @@
 | 10 | Verifier | 对抗式复核 + 三态 Verdict（CONFIRMED / REJECT / ESCALATE） |
 | 11 | 数据契约 | change.json / Impact Map / candidate.json / finding.json / annotation.json（见 §4） |
 | 12 | Signal | 两遍扫描：Pass1 grep 全量 → Pass2 AST 句法邻接；不做完整数据流（ADR-0004） |
-| 13 | 报告 | JSON + Markdown 摘要 + 被拒候选附录（比赛未指定格式） |
+| 13 | 报告 | JSON + Markdown 摘要 + 被拒候选附录（比赛未指定格式）；**类别编号门禁**：报告「OWASP」列以 registry.json 为唯一权威，`workflow/report_check.py` 校验 CWE→A 编号（注入=A05 非官方 A03），未覆盖 CWE 禁编号须注记 |
 
 ## 3. 管线总览
 
@@ -95,7 +95,7 @@
 | M8 | A01~A10 扩展 | 冲 60 分 |
 | M9 | Extra + Token 优化 | 冲榜 |
 
-**当前位置**：M8 A01~A10 扩展已完成（M1~M8 验收：骨架+靶场 / Git Collector / Change Analyzer / Signal Engine / Risk Router / Security Reviewer / Verifier + Dedup / A01~A10 扩展，回归 810/810；交付见 [SKILL.md](../code-review/SKILL.md)）。M9 Extra + Token 优化与 ⑧ 报告为蓝图。
+**当前位置**：M8 A01~A10 扩展已完成（M1~M8 验收：骨架+靶场 / Git Collector / Change Analyzer / Signal Engine / Risk Router / Security Reviewer / Verifier + Dedup / A01~A10 扩展，回归 810/810；交付见 [SKILL.md](../code-review/SKILL.md)）。⑧ 报告类别编号门禁已落地（`workflow/report_check.py` + `tests/report/` 34 断言，修复「A03 注入/CWE-89」错标 bug）。M9 Extra + Token 优化与完整 ⑧ Markdown 报告生成为蓝图。
 
 ## 7. 第一版明确不做
 

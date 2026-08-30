@@ -51,6 +51,17 @@ description: 对一次 git 代码变更做 OWASP Top 10:2025 安全审查，产�
    ```
 7. 读终态 `finding.json`，向用户汇报结构化审查结论（findings + rejected 附录）。
    若预算不够，分阶段汇报；被拒候选不隐瞒，列入附录供调优（R13）。
+   **⑧ 报告类别编号门禁（重要）**：报告每条漏洞的「OWASP 2025」类别编号必须以
+   `rules/registry.json` 为唯一权威（A05 注入 = CWE-89/78/79/94/95，A10 = CWE-601 等），
+   **禁止凭 OWASP 记忆编号**（官方把注入编为 A03，项目基线是 A05——两者混用正是历史 bug）。
+   报告写完后先运行门禁，全部通过才算定稿：
+   ```bash
+   python "$SKILL_DIR/workflow/report_check.py" -f SECURITY_REVIEW.md --registry "$SKILL_DIR/rules/registry.json"
+   ```
+   registry 未覆盖的 CWE（如路径穿越 CWE-22）不得编造 A 编号——表格里注明「官方 OWASP 2025 映射，
+   项目规则未覆盖」即可放行。类别编号表（项目分类基线，设计定稿 §5）：
+   `A01 访问控制 / A02 安全配置错误 / A03 软件供应链 / A04 加密失败 / A05 注入 /
+   A06 过时组件 / A07 认证失败 / A08 完整性失败 / A09 日志监控失败 / A10 SSRF`。
 
 ## M2 已落地：Git Collector
 
@@ -147,7 +158,7 @@ python workflow/verifier.py dedup  -i finding.json -o finding.json
 - 验收：`tests/m7/run_tests.py`（184 断言：30 positive 复核+去重后仍有 finding + 20 negative 零误报 + 三态判定 + 预算分批 + 脱敏贯通 + 契约 + dedup 合并 + 校验 + CLI 接线）。
   - A03/A06 重叠注记：`unpinned_dependency` 与 `floating_dependency` 同为 CWE-1104，浮动版本行两规则都触发，dedup 按 `(file,cwe)` 合并为一条、保留排序靠前的 A03 命名（设计定稿 §5 已注明的历史命名遗留）；A06 floating 精确 pattern 在 M4/M6 验证，M7 按同族+行号验收。
 
-## 管线（M1~M7 已落地，⑧ 蓝图）
+## 管线（M1~M8 已落地；⑧ 报告类别门禁 `report_check.py` 已落地，完整报告生成仍为蓝图）
 
 ```text
 ① Git Collector → ② Change Analyzer → ③ Signal Engine → ④ Risk Router
@@ -177,4 +188,5 @@ OWASP Top 10:2025 官方 A01~A10（248 CWE）。27 条规则见 `rules/registry.
 - [x] M6 Security Reviewer（`workflow/reviewer.py`，首个 LLM 阶段 + 预算分批 + 合并静态结案，验收 144 断言通过）
 - [x] M7 Verifier + Dedup（`workflow/verifier.py`，对抗式三态复核 + 去重合并，验收 184 断言通过）
 - [x] M8 A01~A10 扩展（新增 9 规则 + 30 positive/20 negative 靶场，A06~A10 全覆盖，回归 810 断言）
-- [ ] M9 Extra + Token 优化
+- [x] ⑧ 报告类别编号门禁（`workflow/report_check.py`：CWE→A 编号以 registry.json 为准，禁止凭 OWASP 记忆编号混用官方 A03/基线 A05；回归 `tests/report/run_tests.py` 34 断言）
+- [ ] M9 Extra + Token 优化 + 完整 ⑧ Markdown 报告生成
